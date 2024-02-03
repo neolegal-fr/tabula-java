@@ -277,8 +277,13 @@ public class Ruling extends Line2D.Float {
         }
         return angle;
     }
-    
-    
+
+    public boolean parallelTo(Ruling other) {
+        if (other == null) {
+            return false;
+        }
+        return Utils.feq(this.getAngle(), other.getAngle());
+    }
     
     @Override
     public String toString() {
@@ -428,6 +433,27 @@ public class Ruling extends Line2D.Float {
                 final float newStart = lastFlipped ? Math.max(nextS, lastStart) : Math.min(nextS, lastStart);
                 final float newEnd   = lastFlipped ? Math.min(nextE, lastEnd)   : Math.max(nextE, lastEnd);
                 last.setStartEnd(newStart, newEnd);
+
+                last.setPosition(last.longerThan(next_line) ? last.getPosition() :  next_line.getPosition());
+                
+                assert !last.oblique();
+            }
+            else if (next_line.nearlyOverlaps(last, 10f)) {
+                final float lastStart = last.getStart();
+                final float lastEnd = last.getEnd();
+
+                final boolean lastFlipped = lastStart            > lastEnd;
+                final boolean nextFlipped = next_line.getStart() > next_line.getEnd();
+
+                boolean differentDirections = nextFlipped != lastFlipped;
+                float nextS = differentDirections ? next_line.getEnd()   : next_line.getStart();
+                float nextE = differentDirections ? next_line.getStart() : next_line.getEnd();
+
+                final float newStart = lastFlipped ? Math.max(nextS, lastStart) : Math.min(nextS, lastStart);
+                final float newEnd   = lastFlipped ? Math.min(nextE, lastEnd)   : Math.max(nextE, lastEnd);
+                last.setStartEnd(newStart, newEnd);
+
+                last.setPosition(last.longerThan(next_line) ? last.getPosition() :  next_line.getPosition());
                 assert !last.oblique();
             }
             else if (next_line.length() == 0) {
@@ -438,5 +464,33 @@ public class Ruling extends Line2D.Float {
             }
         }
         return rv;
+    }
+
+    private boolean nearlyOverlaps(Ruling other, float proximityThreshold) {
+        if (!this.parallelTo(other) || (Math.abs(this.getPosition()) - Math.abs(other.getPosition()) > proximityThreshold)) {
+            return false;
+        }
+
+        if (this.getStart() >= other.getStart() && this.getStart() <= other.getEnd()) {
+            return true;
+        }
+
+        if (this.getEnd() >= other.getStart() && this.getEnd() <= other.getEnd()) {
+            return true;
+        }
+
+        if (other.getStart() >= this.getStart() && other.getStart() <= this.getEnd()) {
+            return true;
+        }
+
+        if (other.getEnd() >= this.getStart() && other.getEnd() <= this.getEnd()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean longerThan(Ruling next_line) {
+        return this.length() > next_line.length();
     }
 }
