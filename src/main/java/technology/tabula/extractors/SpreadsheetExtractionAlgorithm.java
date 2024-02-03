@@ -4,6 +4,7 @@ import technology.tabula.*;
 
 import java.awt.geom.Point2D;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author manuel
@@ -13,6 +14,21 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
     
     private static final float MAGIC_HEURISTIC_NUMBER = 0.65f;
     
+    int maxHorizontalLineGapInPixels = 2;
+    int maxVerticalLineGapInPixels = 2;
+
+    public SpreadsheetExtractionAlgorithm() {
+    }
+
+    public SpreadsheetExtractionAlgorithm(int maxHorizontalLineGapInPixels, int maxVerticalLineGapInPixels) {
+        this.maxHorizontalLineGapInPixels = maxHorizontalLineGapInPixels;
+        this.maxVerticalLineGapInPixels = maxVerticalLineGapInPixels;
+    }
+
+    public SpreadsheetExtractionAlgorithm(int maxHorizontalLineGapInPixels) {
+        this.maxHorizontalLineGapInPixels = maxHorizontalLineGapInPixels;
+    }
+
     private static final Comparator<Point2D> Y_FIRST_POINT_COMPARATOR = (point1, point2) -> {
         int compareY = compareRounded(point1.getY(), point2.getY());
         if (compareY == 0) {
@@ -57,8 +73,8 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
                 verticalR.add(r);
             }
         }
-        horizontalR = Ruling.collapseOrientedRulings(horizontalR);
-        verticalR = Ruling.collapseOrientedRulings(verticalR);
+        horizontalR = Ruling.collapseOrientedRulings(horizontalR, maxHorizontalLineGapInPixels / 2);
+        verticalR = Ruling.collapseOrientedRulings(verticalR, maxVerticalLineGapInPixels / 2);
         
         List<Cell> cells = findCells(horizontalR, verticalR);
         List<Rectangle> spreadsheetAreas = findSpreadsheetsFromCells(cells);
@@ -69,8 +85,9 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
             List<Cell> overlappingCells = new ArrayList<>();
             for (Cell c: cells) {
                 if (c.intersects(area)) {
-
-                    c.setTextElements(TextElement.mergeWords(page.getText(c)));
+                    List<TextChunk> textChunks = TextElement.mergeWords(page.getText(c));
+                    String text = textChunks.stream().map(chunk -> chunk.getText()).collect(Collectors.joining());
+                    c.setTextElements(textChunks);
                     overlappingCells.add(c);
                 }
             }
