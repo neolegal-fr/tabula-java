@@ -13,25 +13,30 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
     
     private static final float MAGIC_HEURISTIC_NUMBER = 0.65f;
     
-    int maxGapBetweenConsecutiveHorizontalLines = 2;
-    int maxGapBetweenConsecutiveVerticalLines = 2;
-    float minGapBetweenParallelLines = 0f;
+    /** Minimum space between two aligned consecutive HORIZONTAL rulings */
+    int maxGapBetweenAlignedHorizontalRulings = 2;
+
+    /** Minimum space between two aligned consecutive VERTICAL rulings */
+    int maxGapBetweenAlignedVerticalRulings = 2;
+
+    /** Minimum space between two parallel rulings */
+    float minSpacingBetweenRulings = 0f;
 
     public SpreadsheetExtractionAlgorithm() {
     }
 
-    public SpreadsheetExtractionAlgorithm withMaxGapBetweenConsecutiveHorizontalLines(int maxGapBetweenConsecutiveHorizontalLines) {
-        this.maxGapBetweenConsecutiveHorizontalLines = maxGapBetweenConsecutiveHorizontalLines;
+    public SpreadsheetExtractionAlgorithm withMaxGapBetweenAlignedHorizontalRulings(int maxGapBetweenAlignedHorizontalRulings) {
+        this.maxGapBetweenAlignedHorizontalRulings = maxGapBetweenAlignedHorizontalRulings;
         return this;
     }
 
-    public SpreadsheetExtractionAlgorithm withMaxGapBetweenConsecutiveVerticalLines(int maxGapBetweenConsecutiveVerticalLines) {
-        this.maxGapBetweenConsecutiveVerticalLines = maxGapBetweenConsecutiveVerticalLines;
+    public SpreadsheetExtractionAlgorithm withMaxGapBetweenAlignedVerticalRulings(int maxGapBetweenAlignedVerticalRulings) {
+        this.maxGapBetweenAlignedVerticalRulings = maxGapBetweenAlignedVerticalRulings;
         return this;
     }
 
-    public SpreadsheetExtractionAlgorithm withMinGapBetweenParallelLines(float minGapBetweenParallelLines) {
-        this.minGapBetweenParallelLines = minGapBetweenParallelLines;
+    public SpreadsheetExtractionAlgorithm withMinSpacingBetweenRulings(float minSpacingBetweenRulings) {
+        this.minSpacingBetweenRulings = minSpacingBetweenRulings;
         return this;
     }
 
@@ -79,8 +84,18 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
                 verticalR.add(r);
             }
         }
-        horizontalR = Ruling.collapseOrientedRulings(horizontalR, maxGapBetweenConsecutiveHorizontalLines / 2, minGapBetweenParallelLines);
-        verticalR = Ruling.collapseOrientedRulings(verticalR, maxGapBetweenConsecutiveVerticalLines / 2, minGapBetweenParallelLines);
+
+        // Repeat rulings collapsing until stability is reached
+        int count = 0;
+        do {
+            count = horizontalR.size();
+            horizontalR = Ruling.collapseOrientedRulings(horizontalR, maxGapBetweenAlignedHorizontalRulings / 2, minSpacingBetweenRulings);   
+        } while (count != horizontalR.size());
+
+        do {
+            count = verticalR.size();
+            verticalR = Ruling.collapseOrientedRulings(verticalR, maxGapBetweenAlignedVerticalRulings / 2, minSpacingBetweenRulings);
+        } while (count != verticalR.size());
         
         List<Cell> cells = findCells(horizontalR, verticalR);
         List<Rectangle> spreadsheetAreas = findSpreadsheetsFromCells(cells);

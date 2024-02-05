@@ -410,7 +410,7 @@ public class Ruling extends Line2D.Float {
         return collapseOrientedRulings(lines, expandAmount, 0f);
     }
 
-    public static List<Ruling> collapseOrientedRulings(List<Ruling> lines, int expandAmount, float proximityThreshold) {
+    public static List<Ruling> collapseOrientedRulings(List<Ruling> lines, int expandAmount, float minSpacing) {
         ArrayList<Ruling> rv = new ArrayList<>();
         Collections.sort(lines, new Comparator<Ruling>() {
             @Override
@@ -423,7 +423,8 @@ public class Ruling extends Line2D.Float {
         for (Ruling next_line : lines) {
             Ruling last = rv.isEmpty() ? null : rv.get(rv.size() - 1);
             // if current line colinear with next, and are "close enough": expand current line
-            if (last != null && Utils.feq(next_line.getPosition(), last.getPosition()) && last.nearlyIntersects(next_line, expandAmount)) {
+            boolean overlapping = next_line.nearlyOverlaps(last, minSpacing);
+            if (overlapping || (last != null && Utils.feq(next_line.getPosition(), last.getPosition()) && last.nearlyIntersects(next_line, expandAmount))) {
                 final float lastStart = last.getStart();
                 final float lastEnd = last.getEnd();
 
@@ -436,28 +437,16 @@ public class Ruling extends Line2D.Float {
 
                 final float newStart = lastFlipped ? Math.max(nextS, lastStart) : Math.min(nextS, lastStart);
                 final float newEnd   = lastFlipped ? Math.min(nextE, lastEnd)   : Math.max(nextE, lastEnd);
-                last.setStartEnd(newStart, newEnd);
 
-                last.setPosition(last.longerThan(next_line) ? last.getPosition() :  next_line.getPosition());
+                if (last.getPosition() != next_line.getPosition() && overlapping && next_line.length() > 0) {
+                    // Set the position of the intermediate line between the last and next line, depending on the wight (the length) of each one
+                    float lastLineWeight = (float)(last.length() / (last.length() + next_line.length()));
+                    float nextLineWeight = 1f - lastLineWeight;
+                    last.setPosition(lastLineWeight * last.getPosition() + nextLineWeight *  next_line.getPosition());
+                }
+
+                last.setStartEnd(newStart, newEnd);
                 
-                assert !last.oblique();
-            }
-            else if (next_line.nearlyOverlaps(last, proximityThreshold)) {
-                final float lastStart = last.getStart();
-                final float lastEnd = last.getEnd();
-
-                final boolean lastFlipped = lastStart            > lastEnd;
-                final boolean nextFlipped = next_line.getStart() > next_line.getEnd();
-
-                boolean differentDirections = nextFlipped != lastFlipped;
-                float nextS = differentDirections ? next_line.getEnd()   : next_line.getStart();
-                float nextE = differentDirections ? next_line.getStart() : next_line.getEnd();
-
-                final float newStart = lastFlipped ? Math.max(nextS, lastStart) : Math.min(nextS, lastStart);
-                final float newEnd   = lastFlipped ? Math.min(nextE, lastEnd)   : Math.max(nextE, lastEnd);
-                last.setStartEnd(newStart, newEnd);
-
-                last.setPosition(last.longerThan(next_line) ? last.getPosition() :  next_line.getPosition());
                 assert !last.oblique();
             }
             else if (next_line.length() == 0) {
