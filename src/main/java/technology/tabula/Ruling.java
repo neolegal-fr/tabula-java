@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Formatter;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -412,7 +413,9 @@ public class Ruling extends Line2D.Float {
 
     public static List<Ruling> collapseOrientedRulings(List<Ruling> lines, int expandAmount, float minSpacing) {
         ArrayList<Ruling> rv = new ArrayList<>();
-        Collections.sort(lines, new Comparator<Ruling>() {
+
+        LinkedList<Ruling> remainings = new LinkedList<>(lines);
+        Collections.sort(remainings, new Comparator<Ruling>() {
             @Override
             public int compare(Ruling a, Ruling b) {
                 final float diff = a.getPosition() - b.getPosition();
@@ -420,41 +423,44 @@ public class Ruling extends Line2D.Float {
             }
         });
 
-        for (Ruling next_line : lines) {
-            Ruling last = rv.isEmpty() ? null : rv.get(rv.size() - 1);
-            // if current line colinear with next, and are "close enough": expand current line
-            boolean overlapping = next_line.nearlyOverlaps(last, minSpacing);
-            if (overlapping || (last != null && Utils.feq(next_line.getPosition(), last.getPosition()) && last.nearlyIntersects(next_line, expandAmount))) {
-                final float lastStart = last.getStart();
-                final float lastEnd = last.getEnd();
+        while (!remainings.isEmpty()) {
+            Ruling collapsedLine = remainings.pop();
+            LinkedList<Ruling> others = new LinkedList<>(remainings);
+            remainings.clear();
+            collapsedLine = new Ruling(collapsedLine.getP1(), collapsedLine.getP2());
+            if (collapsedLine.getStart() > collapsedLine.getEnd()) {
+                collapsedLine.setStartEnd(collapsedLine.getEnd(), collapsedLine.getStart());
+            }
+            for (Ruling otherLine : others) {                
+                boolean overlapping = minSpacing > 0 && collapsedLine.nearlyOverlaps(otherLine, minSpacing);
+                if (overlapping || (Utils.feq(collapsedLine.getPosition(), otherLine.getPosition())
+                        && otherLine.nearlyIntersects(collapsedLine, expandAmount))) {
+                    final float otherStart = Math.min(otherLine.getStart(), otherLine.getEnd());
+                    final float otherEnd = Math.max(otherLine.getStart(), otherLine.getEnd());
 
-                final boolean lastFlipped = lastStart            > lastEnd;
-                final boolean nextFlipped = next_line.getStart() > next_line.getEnd();
+                    float collapsedStart = Math.min(collapsedLine.getStart(), collapsedLine.getEnd());
+                    float collapsedEnd = Math.max(collapsedLine.getStart(), collapsedLine.getEnd());
 
-                boolean differentDirections = nextFlipped != lastFlipped;
-                float nextS = differentDirections ? next_line.getEnd()   : next_line.getStart();
-                float nextE = differentDirections ? next_line.getStart() : next_line.getEnd();
+                    final float newStart = Math.min(collapsedStart, otherStart);
+                    final float newEnd = Math.max(collapsedEnd, otherEnd);
 
-                final float newStart = lastFlipped ? Math.max(nextS, lastStart) : Math.min(nextS, lastStart);
-                final float newEnd   = lastFlipped ? Math.min(nextE, lastEnd)   : Math.max(nextE, lastEnd);
+                    if (collapsedLine.getPosition() != otherLine.getPosition() && overlapping
+                            && collapsedLine.length() > 0) {                        
+                        // Set the position of the collapsed line as a weighted average of the two lines position
+                        float otherLineWeight = (float) (otherLine.length() / (otherLine.length() + collapsedLine.length()));
+                        float collapsedLineWeight = 1f - otherLineWeight;
+                        collapsedLine.setPosition(
+                                otherLineWeight * otherLine.getPosition() + collapsedLineWeight * collapsedLine.getPosition());
+                    }
 
-                if (last.getPosition() != next_line.getPosition() && overlapping && next_line.length() > 0) {
-                    // Set the position of the intermediate line between the last and next line, depending on the wight (the length) of each one
-                    float lastLineWeight = (float)(last.length() / (last.length() + next_line.length()));
-                    float nextLineWeight = 1f - lastLineWeight;
-                    last.setPosition(lastLineWeight * last.getPosition() + nextLineWeight *  next_line.getPosition());
+                    collapsedLine.setStartEnd(newStart, newEnd);
+                    
+                    assert !collapsedLine.oblique();
+                } else {
+                    remainings.add(otherLine);
                 }
-
-                last.setStartEnd(newStart, newEnd);
-                
-                assert !last.oblique();
             }
-            else if (next_line.length() == 0) {
-                continue;
-            }
-            else {
-                rv.add(next_line);
-            }
+            rv.add(collapsedLine);
         }
         return rv;
     }
