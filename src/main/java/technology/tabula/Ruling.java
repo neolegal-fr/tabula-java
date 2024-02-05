@@ -460,7 +460,7 @@ public class Ruling extends Line2D.Float {
     }
 
     private boolean nearlyOverlaps(Ruling other, float proximityThreshold) {
-        if (!this.parallelTo(other) || (Math.abs(this.getPosition()) - Math.abs(other.getPosition()) > proximityThreshold)) {
+        if (!this.parallelTo(other) || (Math.abs(this.getPosition() - other.getPosition()) > proximityThreshold)) {
             return false;
         }
 
