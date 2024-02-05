@@ -407,6 +407,10 @@ public class Ruling extends Line2D.Float {
     }
     
     public static List<Ruling> collapseOrientedRulings(List<Ruling> lines, int expandAmount) {
+        return collapseOrientedRulings(lines, expandAmount, 0f);
+    }
+
+    public static List<Ruling> collapseOrientedRulings(List<Ruling> lines, int expandAmount, float proximityThreshold) {
         ArrayList<Ruling> rv = new ArrayList<>();
         Collections.sort(lines, new Comparator<Ruling>() {
             @Override
@@ -438,7 +442,7 @@ public class Ruling extends Line2D.Float {
                 
                 assert !last.oblique();
             }
-            else if (next_line.nearlyOverlaps(last, 10f)) {
+            else if (next_line.nearlyOverlaps(last, proximityThreshold)) {
                 final float lastStart = last.getStart();
                 final float lastEnd = last.getEnd();
 

@@ -4,7 +4,6 @@ import technology.tabula.*;
 
 import java.awt.geom.Point2D;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * @author manuel
@@ -14,19 +13,26 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
     
     private static final float MAGIC_HEURISTIC_NUMBER = 0.65f;
     
-    int maxHorizontalLineGapInPixels = 2;
-    int maxVerticalLineGapInPixels = 2;
+    int maxGapBetweenConsecutiveHorizontalLines = 2;
+    int maxGapBetweenConsecutiveVerticalLines = 2;
+    float minGapBetweenParallelLines = 0f;
 
     public SpreadsheetExtractionAlgorithm() {
     }
 
-    public SpreadsheetExtractionAlgorithm(int maxHorizontalLineGapInPixels, int maxVerticalLineGapInPixels) {
-        this.maxHorizontalLineGapInPixels = maxHorizontalLineGapInPixels;
-        this.maxVerticalLineGapInPixels = maxVerticalLineGapInPixels;
+    public SpreadsheetExtractionAlgorithm withMaxGapBetweenConsecutiveHorizontalLines(int maxGapBetweenConsecutiveHorizontalLines) {
+        this.maxGapBetweenConsecutiveHorizontalLines = maxGapBetweenConsecutiveHorizontalLines;
+        return this;
     }
 
-    public SpreadsheetExtractionAlgorithm(int maxHorizontalLineGapInPixels) {
-        this.maxHorizontalLineGapInPixels = maxHorizontalLineGapInPixels;
+    public SpreadsheetExtractionAlgorithm withMaxGapBetweenConsecutiveVerticalLines(int maxGapBetweenConsecutiveVerticalLines) {
+        this.maxGapBetweenConsecutiveVerticalLines = maxGapBetweenConsecutiveVerticalLines;
+        return this;
+    }
+
+    public SpreadsheetExtractionAlgorithm withMinGapBetweenParallelLines(float minGapBetweenParallelLines) {
+        this.minGapBetweenParallelLines = minGapBetweenParallelLines;
+        return this;
     }
 
     private static final Comparator<Point2D> Y_FIRST_POINT_COMPARATOR = (point1, point2) -> {
@@ -73,8 +79,8 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
                 verticalR.add(r);
             }
         }
-        horizontalR = Ruling.collapseOrientedRulings(horizontalR, maxHorizontalLineGapInPixels / 2);
-        verticalR = Ruling.collapseOrientedRulings(verticalR, maxVerticalLineGapInPixels / 2);
+        horizontalR = Ruling.collapseOrientedRulings(horizontalR, maxGapBetweenConsecutiveHorizontalLines / 2, minGapBetweenParallelLines);
+        verticalR = Ruling.collapseOrientedRulings(verticalR, maxGapBetweenConsecutiveVerticalLines / 2, minGapBetweenParallelLines);
         
         List<Cell> cells = findCells(horizontalR, verticalR);
         List<Rectangle> spreadsheetAreas = findSpreadsheetsFromCells(cells);
@@ -86,7 +92,6 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
             for (Cell c: cells) {
                 if (c.intersects(area)) {
                     List<TextChunk> textChunks = TextElement.mergeWords(page.getText(c));
-                    String text = textChunks.stream().map(chunk -> chunk.getText()).collect(Collectors.joining());
                     c.setTextElements(textChunks);
                     overlappingCells.add(c);
                 }
