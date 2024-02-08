@@ -2,8 +2,6 @@ package technology.tabula;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import org.apache.pdfbox.pdmodel.PDDocument;

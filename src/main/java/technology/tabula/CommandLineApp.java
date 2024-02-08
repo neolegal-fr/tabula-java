@@ -200,10 +200,11 @@ public class CommandLineApp {
     }
 
     private PageIterator getPageIterator(PDDocument pdfDocument) throws IOException {
-        ObjectExtractor extractor = new ObjectExtractor(pdfDocument);
-        return (pages == null) ?
-                extractor.extract() :
-                extractor.extract(pages);
+        try (ObjectExtractor extractor = new ObjectExtractor(pdfDocument);) {
+            return (pages == null) ?
+            extractor.extract() :
+            extractor.extract(pages);
+        }
     }
 
     // CommandLine parsing methods
