@@ -14,10 +14,10 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
     private static final float MAGIC_HEURISTIC_NUMBER = 0.65f;
     
     /** Minimum space between two aligned consecutive HORIZONTAL rulings */
-    int maxGapBetweenAlignedHorizontalRulings = 2;
+    int maxGapBetweenAlignedHorizontalRulings = Ruling.COLINEAR_OR_PARALLEL_PIXEL_EXPAND_AMOUNT * 2;
 
     /** Minimum space between two aligned consecutive VERTICAL rulings */
-    int maxGapBetweenAlignedVerticalRulings = 2;
+    int maxGapBetweenAlignedVerticalRulings = Ruling.COLINEAR_OR_PARALLEL_PIXEL_EXPAND_AMOUNT * 2;
 
     /** Minimum space between two parallel rulings */
     float minSpacingBetweenRulings = 0f;
@@ -87,17 +87,19 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
 
         // Repeat rulings collapsing until stability is reached
         int count = 0;
+        int horizontalExpandAmount = maxGapBetweenAlignedHorizontalRulings / 2;
+        int verticalExpandAmount = maxGapBetweenAlignedVerticalRulings / 2;
         do {
             count = horizontalR.size();
-            horizontalR = Ruling.collapseOrientedRulings(horizontalR, maxGapBetweenAlignedHorizontalRulings / 2, minSpacingBetweenRulings);   
+            horizontalR = Ruling.collapseOrientedRulings(horizontalR, horizontalExpandAmount, verticalExpandAmount, minSpacingBetweenRulings);   
         } while (count != horizontalR.size());
 
         do {
             count = verticalR.size();
-            verticalR = Ruling.collapseOrientedRulings(verticalR, maxGapBetweenAlignedVerticalRulings / 2, minSpacingBetweenRulings);
+            verticalR = Ruling.collapseOrientedRulings(verticalR, verticalExpandAmount, horizontalExpandAmount, minSpacingBetweenRulings);
         } while (count != verticalR.size());
         
-        List<Cell> cells = findCells(horizontalR, verticalR);
+        List<Cell> cells = findCells(horizontalR, verticalR, horizontalExpandAmount);
         List<Rectangle> spreadsheetAreas = findSpreadsheetsFromCells(cells);
         
         List<Table> spreadsheets = new ArrayList<>();
@@ -167,8 +169,12 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
     }
     
     public static List<Cell> findCells(List<Ruling> horizontalRulingLines, List<Ruling> verticalRulingLines) {
+        return findCells(horizontalRulingLines, verticalRulingLines, Ruling.PERPENDICULAR_PIXEL_EXPAND_AMOUNT);
+    }
+
+    public static List<Cell> findCells(List<Ruling> horizontalRulingLines, List<Ruling> verticalRulingLines, int perpendicularExpandAmount) {
         List<Cell> cellsFound = new ArrayList<>();
-        Map<Point2D, Ruling[]> intersectionPoints = Ruling.findIntersections(horizontalRulingLines, verticalRulingLines);
+        Map<Point2D, Ruling[]> intersectionPoints = Ruling.findIntersections(horizontalRulingLines, verticalRulingLines, perpendicularExpandAmount);
         List<Point2D> intersectionPointsList = new ArrayList<>(intersectionPoints.keySet());
         intersectionPointsList.sort(Y_FIRST_POINT_COMPARATOR);
         

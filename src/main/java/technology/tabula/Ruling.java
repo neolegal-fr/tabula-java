@@ -16,8 +16,8 @@ import java.util.TreeMap;
 @SuppressWarnings("serial")
 public class Ruling extends Line2D.Float {
     
-    private static int PERPENDICULAR_PIXEL_EXPAND_AMOUNT = 2;
-    private static int COLINEAR_OR_PARALLEL_PIXEL_EXPAND_AMOUNT = 1;
+    public final static int PERPENDICULAR_PIXEL_EXPAND_AMOUNT = 2;
+    public final static int COLINEAR_OR_PARALLEL_PIXEL_EXPAND_AMOUNT = 1;
     private enum SOType { VERTICAL, HRIGHT, HLEFT }
 
     public Ruling(float top, float left, float width, float height) {
@@ -152,10 +152,10 @@ public class Ruling extends Line2D.Float {
     // A total expansion amount of 2 is empirically verified to work sometimes. It's not a magic number from any
     // source other than a little bit of experience.)
     public boolean nearlyIntersects(Ruling another) {
-        return this.nearlyIntersects(another, COLINEAR_OR_PARALLEL_PIXEL_EXPAND_AMOUNT);
+        return this.nearlyIntersects(another, COLINEAR_OR_PARALLEL_PIXEL_EXPAND_AMOUNT, PERPENDICULAR_PIXEL_EXPAND_AMOUNT);
     }
 
-    public boolean nearlyIntersects(Ruling another, int colinearOrParallelExpandAmount) {
+    public boolean nearlyIntersects(Ruling another, int colinearOrParallelExpandAmount, int perpendicularExpandAmout) {
         if (this.intersectsLine(another)) {
             return true;
         }
@@ -163,7 +163,7 @@ public class Ruling extends Line2D.Float {
         boolean rv = false;
         
         if (this.perpendicularTo(another)) {
-            rv = this.expand(PERPENDICULAR_PIXEL_EXPAND_AMOUNT).intersectsLine(another);
+            rv = this.expand(perpendicularExpandAmout).intersectsLine(another.expand(perpendicularExpandAmout));
         }
         else {
             rv = this.expand(colinearOrParallelExpandAmount)
@@ -196,9 +196,9 @@ public class Ruling extends Line2D.Float {
         return r;
     }
     
-    public Point2D intersectionPoint(Ruling other) {
-        Ruling this_l = this.expand(PERPENDICULAR_PIXEL_EXPAND_AMOUNT);
-        Ruling other_l = other.expand(PERPENDICULAR_PIXEL_EXPAND_AMOUNT);
+    public Point2D intersectionPoint(Ruling other, int perpendicularExpandAmount) {
+        Ruling this_l = this.expand(perpendicularExpandAmount);
+        Ruling other_l = other.expand(perpendicularExpandAmount);
         Ruling horizontal, vertical;
         
         if (!this_l.intersectsLine(other_l)) {
@@ -305,9 +305,13 @@ public class Ruling extends Line2D.Float {
         return rv;
     }
     
+    public static Map<Point2D, Ruling[]> findIntersections(List<Ruling> horizontals, List<Ruling> verticals) {
+        return findIntersections(horizontals, verticals, PERPENDICULAR_PIXEL_EXPAND_AMOUNT);
+    }
+    
     // log(n) implementation of find_intersections
     // based on http://people.csail.mit.edu/indyk/6.838-old/handouts/lec2.pdf
-    public static Map<Point2D, Ruling[]> findIntersections(List<Ruling> horizontals, List<Ruling> verticals) {
+    public static Map<Point2D, Ruling[]> findIntersections(List<Ruling> horizontals, List<Ruling> verticals, int perpendicularExpandAmount) {
         
         class SortObject {
             protected SOType type;
@@ -341,8 +345,8 @@ public class Ruling extends Line2D.Float {
         });
         
         for (Ruling h : horizontals) {
-            sos.add(new SortObject(SOType.HLEFT, h.getLeft() - PERPENDICULAR_PIXEL_EXPAND_AMOUNT, h));
-            sos.add(new SortObject(SOType.HRIGHT, h.getRight() + PERPENDICULAR_PIXEL_EXPAND_AMOUNT, h));
+            sos.add(new SortObject(SOType.HLEFT, h.getLeft() - perpendicularExpandAmount, h));
+            sos.add(new SortObject(SOType.HRIGHT, h.getRight() + perpendicularExpandAmount, h));
         }
 
         for (Ruling v : verticals) {
@@ -381,13 +385,13 @@ public class Ruling extends Line2D.Float {
             switch(so.type) {
             case VERTICAL:
                 for (Map.Entry<Ruling, Boolean> h : tree.entrySet()) {
-                    Point2D i = h.getKey().intersectionPoint(so.ruling);
+                    Point2D i = h.getKey().intersectionPoint(so.ruling, perpendicularExpandAmount);
                     if (i == null) {
                         continue;
                     }
                     rv.put(i, 
-                           new Ruling[] { h.getKey().expand(PERPENDICULAR_PIXEL_EXPAND_AMOUNT), 
-                                          so.ruling.expand(PERPENDICULAR_PIXEL_EXPAND_AMOUNT) });
+                           new Ruling[] { h.getKey().expand(perpendicularExpandAmount), 
+                                          so.ruling.expand(perpendicularExpandAmount) });
                 }
                 break;
             case HRIGHT:
@@ -407,11 +411,15 @@ public class Ruling extends Line2D.Float {
         return collapseOrientedRulings(lines, COLINEAR_OR_PARALLEL_PIXEL_EXPAND_AMOUNT);
     }
     
-    public static List<Ruling> collapseOrientedRulings(List<Ruling> lines, int expandAmount) {
-        return collapseOrientedRulings(lines, expandAmount, 0f);
+    public static List<Ruling> collapseOrientedRulings(List<Ruling> lines, int colinearExpandAmount) {
+        return collapseOrientedRulings(lines, colinearExpandAmount, PERPENDICULAR_PIXEL_EXPAND_AMOUNT);
     }
 
-    public static List<Ruling> collapseOrientedRulings(List<Ruling> lines, int expandAmount, float minSpacing) {
+    public static List<Ruling> collapseOrientedRulings(List<Ruling> lines, int colinearExpandAmount, int perpendicularExpandAmout) {
+        return collapseOrientedRulings(lines, colinearExpandAmount, perpendicularExpandAmout, 0f);
+    }
+
+    public static List<Ruling> collapseOrientedRulings(List<Ruling> lines, int colinearExpandAmount, int perpendicularExpandAmount, float minSpacing) {
         ArrayList<Ruling> rv = new ArrayList<>();
 
         LinkedList<Ruling> remainings = new LinkedList<>(lines);
@@ -434,7 +442,7 @@ public class Ruling extends Line2D.Float {
             for (Ruling otherLine : others) {                
                 boolean overlapping = minSpacing > 0 && collapsedLine.nearlyOverlaps(otherLine, minSpacing);
                 if (overlapping || (Utils.feq(collapsedLine.getPosition(), otherLine.getPosition())
-                        && otherLine.nearlyIntersects(collapsedLine, expandAmount))) {
+                        && otherLine.nearlyIntersects(collapsedLine, colinearExpandAmount, perpendicularExpandAmount))) {
                     final float otherStart = Math.min(otherLine.getStart(), otherLine.getEnd());
                     final float otherEnd = Math.max(otherLine.getStart(), otherLine.getEnd());
 
@@ -487,9 +495,5 @@ public class Ruling extends Line2D.Float {
         }
 
         return false;
-    }
-
-    private boolean longerThan(Ruling next_line) {
-        return this.length() > next_line.length();
     }
 }
