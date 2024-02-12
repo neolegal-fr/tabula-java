@@ -99,7 +99,7 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
             verticalR = Ruling.collapseOrientedRulings(verticalR, verticalExpandAmount, horizontalExpandAmount, minSpacingBetweenRulings);
         } while (count != verticalR.size());
         
-        List<Cell> cells = findCells(horizontalR, verticalR, horizontalExpandAmount);
+        List<Cell> cells = findCells(horizontalR, verticalR, horizontalExpandAmount, verticalExpandAmount);
         List<Rectangle> spreadsheetAreas = findSpreadsheetsFromCells(cells);
         
         List<Table> spreadsheets = new ArrayList<>();
@@ -169,12 +169,12 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
     }
     
     public static List<Cell> findCells(List<Ruling> horizontalRulingLines, List<Ruling> verticalRulingLines) {
-        return findCells(horizontalRulingLines, verticalRulingLines, Ruling.PERPENDICULAR_PIXEL_EXPAND_AMOUNT);
+        return findCells(horizontalRulingLines, verticalRulingLines, Ruling.PERPENDICULAR_PIXEL_EXPAND_AMOUNT, Ruling.PERPENDICULAR_PIXEL_EXPAND_AMOUNT);
     }
 
-    public static List<Cell> findCells(List<Ruling> horizontalRulingLines, List<Ruling> verticalRulingLines, int perpendicularExpandAmount) {
+    public static List<Cell> findCells(List<Ruling> horizontalRulingLines, List<Ruling> verticalRulingLines, int horizontalExpandAmount, int verticalExpandAmount) {
         List<Cell> cellsFound = new ArrayList<>();
-        Map<Point2D, Ruling[]> intersectionPoints = Ruling.findIntersections(horizontalRulingLines, verticalRulingLines, perpendicularExpandAmount);
+        Map<Point2D, Ruling[]> intersectionPoints = Ruling.findIntersections(horizontalRulingLines, verticalRulingLines, horizontalExpandAmount, verticalExpandAmount);
         List<Point2D> intersectionPointsList = new ArrayList<>(intersectionPoints.keySet());
         intersectionPointsList.sort(Y_FIRST_POINT_COMPARATOR);
         

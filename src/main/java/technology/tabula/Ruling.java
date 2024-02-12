@@ -306,12 +306,12 @@ public class Ruling extends Line2D.Float {
     }
     
     public static Map<Point2D, Ruling[]> findIntersections(List<Ruling> horizontals, List<Ruling> verticals) {
-        return findIntersections(horizontals, verticals, PERPENDICULAR_PIXEL_EXPAND_AMOUNT);
+        return findIntersections(horizontals, verticals, PERPENDICULAR_PIXEL_EXPAND_AMOUNT, PERPENDICULAR_PIXEL_EXPAND_AMOUNT);
     }
     
     // log(n) implementation of find_intersections
     // based on http://people.csail.mit.edu/indyk/6.838-old/handouts/lec2.pdf
-    public static Map<Point2D, Ruling[]> findIntersections(List<Ruling> horizontals, List<Ruling> verticals, int perpendicularExpandAmount) {
+    public static Map<Point2D, Ruling[]> findIntersections(List<Ruling> horizontals, List<Ruling> verticals, int horizontalExpandAmount, int verticalExpandAmount) {
         
         class SortObject {
             protected SOType type;
@@ -345,8 +345,8 @@ public class Ruling extends Line2D.Float {
         });
         
         for (Ruling h : horizontals) {
-            sos.add(new SortObject(SOType.HLEFT, h.getLeft() - perpendicularExpandAmount, h));
-            sos.add(new SortObject(SOType.HRIGHT, h.getRight() + perpendicularExpandAmount, h));
+            sos.add(new SortObject(SOType.HLEFT, h.getLeft() - horizontalExpandAmount, h));
+            sos.add(new SortObject(SOType.HRIGHT, h.getRight() + horizontalExpandAmount, h));
         }
 
         for (Ruling v : verticals) {
@@ -385,13 +385,13 @@ public class Ruling extends Line2D.Float {
             switch(so.type) {
             case VERTICAL:
                 for (Map.Entry<Ruling, Boolean> h : tree.entrySet()) {
-                    Point2D i = h.getKey().intersectionPoint(so.ruling, perpendicularExpandAmount);
+                    Point2D i = h.getKey().expand(horizontalExpandAmount).intersectionPoint(so.ruling, verticalExpandAmount);
                     if (i == null) {
                         continue;
                     }
                     rv.put(i, 
-                           new Ruling[] { h.getKey().expand(perpendicularExpandAmount), 
-                                          so.ruling.expand(perpendicularExpandAmount) });
+                           new Ruling[] { h.getKey().expand(horizontalExpandAmount), 
+                                          so.ruling.expand(verticalExpandAmount) });
                 }
                 break;
             case HRIGHT:
