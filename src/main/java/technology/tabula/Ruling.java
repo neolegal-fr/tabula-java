@@ -419,7 +419,7 @@ public class Ruling extends Line2D.Float {
         return collapseOrientedRulings(lines, colinearExpandAmount, perpendicularExpandAmout, 0f);
     }
 
-    public static List<Ruling> collapseOrientedRulings(List<Ruling> lines, int colinearExpandAmount, int perpendicularExpandAmount, float minSpacing) {
+    public static List<Ruling> collapseOrientedRulings(List<Ruling> lines, int colinearExpandAmount, int perpendicularExpandAmount, float magnetRadius) {
         ArrayList<Ruling> rv = new ArrayList<>();
 
         LinkedList<Ruling> remainings = new LinkedList<>(lines);
@@ -440,9 +440,9 @@ public class Ruling extends Line2D.Float {
                 collapsedLine.setStartEnd(collapsedLine.getEnd(), collapsedLine.getStart());
             }
             for (Ruling otherLine : others) {                
-                boolean overlapping = minSpacing > 0 && collapsedLine.nearlyOverlaps(otherLine, minSpacing);
-                if (overlapping || (Utils.feq(collapsedLine.getPosition(), otherLine.getPosition())
-                        && otherLine.nearlyIntersects(collapsedLine, colinearExpandAmount, perpendicularExpandAmount))) {
+                boolean overlapping = magnetRadius > 0 && collapsedLine.nearlyOverlaps(otherLine, magnetRadius);
+                boolean intersecting = (Utils.feq(collapsedLine.getPosition(), otherLine.getPosition()) && otherLine.nearlyIntersects(collapsedLine, colinearExpandAmount, perpendicularExpandAmount));
+                if (overlapping || intersecting) {
                     final float otherStart = Math.min(otherLine.getStart(), otherLine.getEnd());
                     final float otherEnd = Math.max(otherLine.getStart(), otherLine.getEnd());
 
@@ -473,24 +473,35 @@ public class Ruling extends Line2D.Float {
         return rv;
     }
 
-    private boolean nearlyOverlaps(Ruling other, float proximityThreshold) {
-        if (!this.parallelTo(other) || (Math.abs(this.getPosition() - other.getPosition()) > proximityThreshold)) {
+    private boolean nearlyOverlaps(Ruling other, float magnetRadius) {
+        if (!this.parallelTo(other) || (Math.abs(this.getPosition() - other.getPosition()) > magnetRadius)) {
+            // the rulings are not parallel or they are parallel but too far apart
             return false;
         }
 
+        if (Utils.feq(this.getStart(), other.getEnd()) || Utils.feq(this.getStart(), other.getEnd())) {
+            // The tips of the rulings barely touch
+            // if they are not almost perfectly aligned, we assume they are two different rulings
+            return Utils.feq(this.getPosition(), other.getPosition());
+        }
+
         if (this.getStart() >= other.getStart() && this.getStart() <= other.getEnd()) {
+            // start of this ruling is inside the other ruling
             return true;
         }
 
         if (this.getEnd() >= other.getStart() && this.getEnd() <= other.getEnd()) {
+            // end of this ruling is inside the other ruling
             return true;
         }
 
         if (other.getStart() >= this.getStart() && other.getStart() <= this.getEnd()) {
+            // start of the other ruling is inside this ruling
             return true;
         }
 
         if (other.getEnd() >= this.getStart() && other.getEnd() <= this.getEnd()) {
+            // end of the other ruling is inside this ruling
             return true;
         }
 

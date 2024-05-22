@@ -19,8 +19,8 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
     /** Minimum space between two aligned consecutive VERTICAL rulings */
     int maxGapBetweenAlignedVerticalRulings = Ruling.COLINEAR_OR_PARALLEL_PIXEL_EXPAND_AMOUNT * 2;
 
-    /** Minimum space between two parallel rulings */
-    float minSpacingBetweenRulings = 0f;
+    float minColumnWidth = 0f;
+    float minRowHeight = 0f;
 
     public SpreadsheetExtractionAlgorithm() {
     }
@@ -35,8 +35,13 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
         return this;
     }
 
-    public SpreadsheetExtractionAlgorithm withMinSpacingBetweenRulings(float minSpacingBetweenRulings) {
-        this.minSpacingBetweenRulings = minSpacingBetweenRulings;
+    public SpreadsheetExtractionAlgorithm withMinColumnWidth(float minColumnWidth) {
+        this.minColumnWidth = minColumnWidth;
+        return this;
+    }
+
+    public SpreadsheetExtractionAlgorithm withMinRowHeight(float minRowHeight) {
+        this.minRowHeight = minRowHeight;
         return this;
     }
 
@@ -91,12 +96,12 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
         int verticalExpandAmount = maxGapBetweenAlignedVerticalRulings / 2;
         do {
             count = horizontalR.size();
-            horizontalR = Ruling.collapseOrientedRulings(horizontalR, horizontalExpandAmount, verticalExpandAmount, minSpacingBetweenRulings);   
+            horizontalR = Ruling.collapseOrientedRulings(horizontalR, horizontalExpandAmount, verticalExpandAmount, minRowHeight);   
         } while (count != horizontalR.size());
 
         do {
             count = verticalR.size();
-            verticalR = Ruling.collapseOrientedRulings(verticalR, verticalExpandAmount, horizontalExpandAmount, minSpacingBetweenRulings);
+            verticalR = Ruling.collapseOrientedRulings(verticalR, verticalExpandAmount, horizontalExpandAmount, minColumnWidth);
         } while (count != verticalR.size());
         
         List<Cell> cells = findCells(horizontalR, verticalR, horizontalExpandAmount, verticalExpandAmount);
@@ -108,7 +113,9 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
             List<Cell> overlappingCells = new ArrayList<>();
             for (Cell c: cells) {
                 if (c.intersects(area)) {
-                    List<TextChunk> textChunks = TextElement.mergeWords(page.getText(c));
+                    // Extend the cell area by 1% right to catch any trailing letter overlapped by the cell border
+                    Rectangle extendedCellArea = new Rectangle(c.getTop(), c.getLeft(), (float)(c.getWidth() * 1.01), (float)c.getHeight());
+                    List<TextChunk> textChunks = TextElement.mergeWords(page.getText(extendedCellArea));
                     c.setTextElements(textChunks);
                     overlappingCells.add(c);
                 }
