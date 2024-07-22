@@ -39,6 +39,6 @@ jobs:
         run: |
           git add pom.xml
           git commit -m "Update versions in pom.xml after release"
-          git push origin main
+          git push origin master
         env:
           GITHUB_TOKEN: ${{ github.token }}
