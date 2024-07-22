@@ -1,12 +1,12 @@
 package technology.tabula;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCohenSutherland {
 
@@ -14,7 +14,7 @@ public class TestCohenSutherland {
     private CohenSutherlandClipping algorithm;
     private static final double DELTA = 0.001;
 
-    @Before
+    @BeforeEach
     public void set() {
         clipWindow = new Rectangle(10, 10, 50, 50);
         algorithm = new CohenSutherlandClipping(clipWindow);

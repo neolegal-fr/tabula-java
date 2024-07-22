@@ -1,12 +1,12 @@
 package technology.tabula;
 
-import static org.junit.Assert.*;
-
 import java.util.List;
 import java.util.ArrayList;
 
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCell {
 

@@ -1,20 +1,18 @@
 package technology.tabula;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.IOException;
-import java.util.List;
-
-import org.junit.Test;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-
+import org.junit.jupiter.api.Test;
 import technology.tabula.extractors.BasicExtractionAlgorithm;
 import technology.tabula.extractors.SpreadsheetExtractionAlgorithm;
 import technology.tabula.writers.CSVWriter;
 import technology.tabula.writers.JSONWriter;
 import technology.tabula.writers.TSVWriter;
+
+import java.io.IOException;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestWriters {
 
@@ -36,7 +34,7 @@ public class TestWriters {
 
     @Test
     public void testCSVWriter() throws IOException {
-    	String expectedCsv = UtilsForTesting.loadCsv("src/test/resources/technology/tabula/csv/argentina_diputados_voting_record.csv");
+        String expectedCsv = UtilsForTesting.loadCsv("src/test/resources/technology/tabula/csv/argentina_diputados_voting_record.csv");
         Table table = this.getTable();
         StringBuilder sb = new StringBuilder();
         (new CSVWriter()).write(sb, table);

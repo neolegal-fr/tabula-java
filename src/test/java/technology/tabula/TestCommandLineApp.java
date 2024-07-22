@@ -1,7 +1,5 @@
 package technology.tabula;
 
-import static org.junit.Assert.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
@@ -10,14 +8,12 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.ParseException;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCommandLineApp {
-
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
 
     private String csvFromCommandLineArgs(String[] args) throws ParseException {
         CommandLineParser parser = new DefaultParser();
@@ -67,11 +63,10 @@ public class TestCommandLineApp {
     }
 
     @Test
-    public void testExtractSpreadsheetWithAreaAndNewFile() throws ParseException, IOException {
+    public void testExtractSpreadsheetWithAreaAndNewFile(@TempDir File newFile) throws ParseException, IOException {
 
         String expectedCsv = UtilsForTesting.loadCsv("src/test/resources/technology/tabula/csv/spreadsheet_no_bounding_frame.csv");
 
-        File newFile = folder.newFile();
         this.csvFromCommandLineArgs(new String[]{
                 "src/test/resources/technology/tabula/spreadsheet_no_bounding_frame.pdf",
                 "-p", "1", "-a",
@@ -138,14 +133,14 @@ public class TestCommandLineApp {
         assertEquals("FLA Audit Profile,,,,,,,,,", s.split("\\r?\\n")[0]);
     }
 
-    @Test(expected=org.apache.commons.cli.ParseException.class)
-    public void testEncryptedWrongPassword() throws ParseException {
-        String s = this.csvFromCommandLineArgs(new String[]{
-                "src/test/resources/technology/tabula/encrypted.pdf",
-                "-s", "wrongpassword",
-                "-p", "1",
-                "-f", "CSV"
-        });
+    @Test
+    public void testEncryptedWrongPassword() {
+        assertThrows(ParseException.class, () -> this.csvFromCommandLineArgs(new String[]{
+                        "src/test/resources/technology/tabula/encrypted.pdf",
+                        "-s", "wrongpassword",
+                        "-p", "1",
+                        "-f", "CSV"
+                }));
     }
 
     @Test

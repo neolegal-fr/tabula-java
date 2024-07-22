@@ -1,6 +1,7 @@
 package technology.tabula;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
@@ -8,9 +9,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestRectangle {
 
@@ -20,8 +19,8 @@ public class TestRectangle {
 		Rectangle first = new Rectangle();
 		Rectangle second = new Rectangle();
 
-		assertTrue(first.equals(second));
-		assertTrue(second.equals(first));
+        assertEquals(first, second);
+        assertEquals(second, first);
 	}
 
 	@Test
@@ -111,7 +110,7 @@ public class TestRectangle {
 		float overlap = lower.verticalOverlap(upper);
 
 		assertEquals(0f, overlap, 0);
-		assertTrue(!lower.verticallyOverlaps(upper));
+        assertFalse(lower.verticallyOverlaps(upper));
 		assertEquals(0f, lower.verticalOverlapRatio(upper), 0);
 		assertEquals(0f, lower.overlapRatio(upper), 0);
 
@@ -138,7 +137,7 @@ public class TestRectangle {
 		Rectangle one = new Rectangle(0f, 0f, 10f, 10f);
 		Rectangle two = new Rectangle(10f, 10f, 10f, 10f);
 
-		assertTrue(!one.horizontallyOverlaps(two));
+        assertFalse(one.horizontallyOverlaps(two));
 		assertEquals(0f, one.overlapRatio(two), 0);
 
 	}
@@ -216,7 +215,7 @@ public class TestRectangle {
 
 		};
 
-		Assert.assertArrayEquals(expectedPoints, points);
+		assertArrayEquals(expectedPoints, points);
 
 	}
 
@@ -255,7 +254,7 @@ public class TestRectangle {
 		assertTrue(a.compareTo(c) < 0);
 	}
 
-	@Test @Ignore
+	@Test @Disabled
 	public void testTransitiveComparison2() {
 		//                     +-------+
 		//                     |       |
@@ -274,7 +273,7 @@ public class TestRectangle {
 		assertTrue(a.compareTo(c) < 0);
 	}
 
-	@Test @Ignore
+	@Test @Disabled
 	public void testWellDefinedComparison1() {
 		Rectangle a = new Rectangle(2,0,2,2);
 		Rectangle b = new Rectangle(1,1,2,2);
