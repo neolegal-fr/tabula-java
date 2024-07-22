@@ -37,6 +37,7 @@ jobs:
 
       - name: commit version increment
         run: |
+          mvn release:update-versions --batch-mode
           git add pom.xml
           git commit -m "Update versions in pom.xml after release"
           git push origin master
