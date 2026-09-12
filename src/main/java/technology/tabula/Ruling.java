@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Formatter;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -15,8 +16,8 @@ import java.util.TreeMap;
 @SuppressWarnings("serial")
 public class Ruling extends Line2D.Float {
     
-    private static int PERPENDICULAR_PIXEL_EXPAND_AMOUNT = 2;
-    private static int COLINEAR_OR_PARALLEL_PIXEL_EXPAND_AMOUNT = 1;
+    public static final int PERPENDICULAR_PIXEL_EXPAND_AMOUNT = 2;
+    public static final int COLINEAR_OR_PARALLEL_PIXEL_EXPAND_AMOUNT = 1;
     private enum SOType { VERTICAL, HRIGHT, HLEFT }
 
     public Ruling(float top, float left, float width, float height) {
@@ -155,6 +156,10 @@ public class Ruling extends Line2D.Float {
     }
 
     public boolean nearlyIntersects(Ruling another, int colinearOrParallelExpandAmount) {
+        return this.nearlyIntersects(another, colinearOrParallelExpandAmount, PERPENDICULAR_PIXEL_EXPAND_AMOUNT);
+    }
+
+    public boolean nearlyIntersects(Ruling another, int colinearOrParallelExpandAmount, int perpendicularExpandAmount) {
         if (this.intersectsLine(another)) {
             return true;
         }
@@ -162,7 +167,7 @@ public class Ruling extends Line2D.Float {
         boolean rv = false;
         
         if (this.perpendicularTo(another)) {
-            rv = this.expand(PERPENDICULAR_PIXEL_EXPAND_AMOUNT).intersectsLine(another);
+            rv = this.expand(perpendicularExpandAmount).intersectsLine(another);
         }
         else {
             rv = this.expand(colinearOrParallelExpandAmount)
@@ -196,8 +201,19 @@ public class Ruling extends Line2D.Float {
     }
     
     public Point2D intersectionPoint(Ruling other) {
-        Ruling this_l = this.expand(PERPENDICULAR_PIXEL_EXPAND_AMOUNT);
-        Ruling other_l = other.expand(PERPENDICULAR_PIXEL_EXPAND_AMOUNT);
+        return this.intersectionPoint(other, PERPENDICULAR_PIXEL_EXPAND_AMOUNT, PERPENDICULAR_PIXEL_EXPAND_AMOUNT);
+    }
+
+    /**
+     * Same as {@link #intersectionPoint(Ruling)}, but the two rulings may be expanded by different
+     * amounts before looking for an intersection. Lines are only ever expanded along their own
+     * direction, so the amount to apply is picked from the orientation of each ruling: a larger
+     * horizontal amount tolerates a wider gap between a horizontal line and the vertical borders
+     * it is supposed to meet, and vice versa.
+     */
+    public Point2D intersectionPoint(Ruling other, int horizontalExpandAmount, int verticalExpandAmount) {
+        Ruling this_l = this.expand(this.horizontal() ? horizontalExpandAmount : verticalExpandAmount);
+        Ruling other_l = other.expand(other.horizontal() ? horizontalExpandAmount : verticalExpandAmount);
         Ruling horizontal, vertical;
         
         if (!this_l.intersectsLine(other_l)) {
@@ -268,6 +284,10 @@ public class Ruling extends Line2D.Float {
         return this.getBottom() - this.getTop();
     }
     
+    public boolean parallelTo(Ruling other) {
+        return other != null && Utils.feq(this.getAngle(), other.getAngle());
+    }
+
     public double getAngle() {
         double angle = Math.toDegrees(Math.atan2(this.getP2().getY() - this.getP1().getY(),
                 this.getP2().getX() - this.getP1().getX()));
@@ -299,9 +319,14 @@ public class Ruling extends Line2D.Float {
         return rv;
     }
     
+    public static Map<Point2D, Ruling[]> findIntersections(List<Ruling> horizontals, List<Ruling> verticals) {
+        return findIntersections(horizontals, verticals, PERPENDICULAR_PIXEL_EXPAND_AMOUNT, PERPENDICULAR_PIXEL_EXPAND_AMOUNT);
+    }
+
     // log(n) implementation of find_intersections
     // based on http://people.csail.mit.edu/indyk/6.838-old/handouts/lec2.pdf
-    public static Map<Point2D, Ruling[]> findIntersections(List<Ruling> horizontals, List<Ruling> verticals) {
+    public static Map<Point2D, Ruling[]> findIntersections(List<Ruling> horizontals, List<Ruling> verticals,
+            int horizontalExpandAmount, int verticalExpandAmount) {
         
         class SortObject {
             protected SOType type;
@@ -335,8 +360,8 @@ public class Ruling extends Line2D.Float {
         });
         
         for (Ruling h : horizontals) {
-            sos.add(new SortObject(SOType.HLEFT, h.getLeft() - PERPENDICULAR_PIXEL_EXPAND_AMOUNT, h));
-            sos.add(new SortObject(SOType.HRIGHT, h.getRight() + PERPENDICULAR_PIXEL_EXPAND_AMOUNT, h));
+            sos.add(new SortObject(SOType.HLEFT, h.getLeft() - horizontalExpandAmount, h));
+            sos.add(new SortObject(SOType.HRIGHT, h.getRight() + horizontalExpandAmount, h));
         }
 
         for (Ruling v : verticals) {
@@ -375,13 +400,13 @@ public class Ruling extends Line2D.Float {
             switch(so.type) {
             case VERTICAL:
                 for (Map.Entry<Ruling, Boolean> h : tree.entrySet()) {
-                    Point2D i = h.getKey().intersectionPoint(so.ruling);
+                    Point2D i = h.getKey().intersectionPoint(so.ruling, horizontalExpandAmount, verticalExpandAmount);
                     if (i == null) {
                         continue;
                     }
                     rv.put(i, 
-                           new Ruling[] { h.getKey().expand(PERPENDICULAR_PIXEL_EXPAND_AMOUNT), 
-                                          so.ruling.expand(PERPENDICULAR_PIXEL_EXPAND_AMOUNT) });
+                           new Ruling[] { h.getKey().expand(horizontalExpandAmount), 
+                                          so.ruling.expand(verticalExpandAmount) });
                 }
                 break;
             case HRIGHT:
@@ -402,6 +427,27 @@ public class Ruling extends Line2D.Float {
     }
     
     public static List<Ruling> collapseOrientedRulings(List<Ruling> lines, int expandAmount) {
+        return collapseOrientedRulings(lines, expandAmount, PERPENDICULAR_PIXEL_EXPAND_AMOUNT, 0f);
+    }
+
+    /**
+     * Merge the rulings of {@code lines} that together draw a single ruling.
+     *
+     * <p>With {@code magnetRadius} at 0 this is {@link #collapseOrientedRulings(List, int)}: only
+     * colinear rulings, no further than {@code expandAmount} apart, are merged. A positive
+     * {@code magnetRadius} adds a second pass that also merges parallel rulings which overlap while
+     * sitting up to {@code magnetRadius} apart - a PDF generator frequently draws one table border as
+     * two slightly offset segments, and keeping them distinct multiplies spurious cells. The merged
+     * ruling then sits at the length-weighted average of the positions it absorbed.
+     *
+     * @param expandAmount how far a ruling may be stretched along its own direction to reach the next
+     *        colinear one
+     * @param perpendicularExpandAmount how far a ruling may be stretched to reach a perpendicular one
+     * @param magnetRadius largest distance between two parallel overlapping rulings for them to be
+     *        considered the same border; 0 disables that second pass
+     */
+    public static List<Ruling> collapseOrientedRulings(List<Ruling> lines, int expandAmount,
+            int perpendicularExpandAmount, float magnetRadius) {
         ArrayList<Ruling> rv = new ArrayList<>();
         Collections.sort(lines, new Comparator<Ruling>() {
             @Override
@@ -414,7 +460,8 @@ public class Ruling extends Line2D.Float {
         for (Ruling next_line : lines) {
             Ruling last = rv.isEmpty() ? null : rv.get(rv.size() - 1);
             // if current line colinear with next, and are "close enough": expand current line
-            if (last != null && Utils.feq(next_line.getPosition(), last.getPosition()) && last.nearlyIntersects(next_line, expandAmount)) {
+            if (last != null && Utils.feq(next_line.getPosition(), last.getPosition())
+                    && last.nearlyIntersects(next_line, expandAmount, perpendicularExpandAmount)) {
                 final float lastStart = last.getStart();
                 final float lastEnd = last.getEnd();
 
@@ -437,6 +484,81 @@ public class Ruling extends Line2D.Float {
                 rv.add(next_line);
             }
         }
+        return magnetRadius > 0 ? magnetize(rv, expandAmount, perpendicularExpandAmount, magnetRadius) : rv;
+    }
+
+    /**
+     * Merge the parallel rulings of {@code lines} that overlap while sitting no further than
+     * {@code magnetRadius} apart, and are therefore two halves of the same border.
+     *
+     * <p>Absorbing a ruling lengthens the surviving one and shifts its position, which may bring a
+     * ruling that was out of reach a moment ago within reach, so the pass is repeated until nothing
+     * moves any more. The rulings of {@code lines} are left untouched.
+     */
+    private static List<Ruling> magnetize(List<Ruling> lines, int expandAmount, int perpendicularExpandAmount,
+            float magnetRadius) {
+        List<Ruling> remaining = new ArrayList<>(lines);
+        List<Ruling> rv = new ArrayList<>();
+
+        while (!remaining.isEmpty()) {
+            Ruling source = remaining.remove(0);
+            Ruling collapsed = new Ruling(source.getP1(), source.getP2());
+
+            boolean absorbedOne = true;
+            while (absorbedOne) {
+                absorbedOne = false;
+                for (Iterator<Ruling> it = remaining.iterator(); it.hasNext(); ) {
+                    Ruling other = it.next();
+                    boolean sameBorder = collapsed.nearlyOverlaps(other, magnetRadius)
+                            || (Utils.feq(collapsed.getPosition(), other.getPosition())
+                                    && collapsed.nearlyIntersects(other, expandAmount, perpendicularExpandAmount));
+                    if (!sameBorder) {
+                        continue;
+                    }
+
+                    if (collapsed.length() > 0 && !Utils.feq(collapsed.getPosition(), other.getPosition())) {
+                        // both segments draw the same border: settle on a position weighted by length,
+                        // so the longer segment - the more likely to be the real border - wins
+                        float otherWeight = (float) (other.length() / (other.length() + collapsed.length()));
+                        collapsed.setPosition(otherWeight * other.getPosition()
+                                + (1f - otherWeight) * collapsed.getPosition());
+                    }
+                    collapsed.setStartEnd(
+                            Math.min(Math.min(collapsed.getStart(), collapsed.getEnd()), Math.min(other.getStart(), other.getEnd())),
+                            Math.max(Math.max(collapsed.getStart(), collapsed.getEnd()), Math.max(other.getStart(), other.getEnd())));
+                    assert !collapsed.oblique();
+
+                    it.remove();
+                    absorbedOne = true;
+                }
+            }
+            rv.add(collapsed);
+        }
         return rv;
+    }
+
+    /**
+     * Whether {@code other} is parallel to this ruling, no further than {@code magnetRadius} away, and
+     * overlaps it along their common direction.
+     */
+    private boolean nearlyOverlaps(Ruling other, float magnetRadius) {
+        if (!this.parallelTo(other) || Math.abs(this.getPosition() - other.getPosition()) > magnetRadius) {
+            // not parallel, or parallel but too far apart
+            return false;
+        }
+
+        if (Utils.feq(this.getStart(), other.getEnd()) || Utils.feq(this.getEnd(), other.getStart())) {
+            // the tips of the rulings barely touch: unless they are almost perfectly aligned, assume
+            // they are two distinct borders drawn end to end
+            return Utils.feq(this.getPosition(), other.getPosition());
+        }
+
+        return spans(this, other.getStart()) || spans(this, other.getEnd())
+                || spans(other, this.getStart()) || spans(other, this.getEnd());
+    }
+
+    private static boolean spans(Ruling ruling, float position) {
+        return position >= Math.min(ruling.getStart(), ruling.getEnd())
+                && position <= Math.max(ruling.getStart(), ruling.getEnd());
     }
 }

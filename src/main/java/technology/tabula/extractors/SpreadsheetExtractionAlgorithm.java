@@ -12,6 +12,89 @@ import java.util.*;
 public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
     
     private static final float MAGIC_HEURISTIC_NUMBER = 0.65f;
+
+    /**
+     * Largest gap, in points, tolerated between two aligned consecutive horizontal rulings for them
+     * to be treated as a single one. Also raises, by the same amount, how far a horizontal ruling may
+     * be stretched to reach the vertical border it is supposed to meet.
+     */
+    private int maxGapBetweenAlignedHorizontalRulings = Ruling.COLINEAR_OR_PARALLEL_PIXEL_EXPAND_AMOUNT * 2;
+
+    /** Same as {@link #maxGapBetweenAlignedHorizontalRulings}, for vertical rulings. */
+    private int maxGapBetweenAlignedVerticalRulings = Ruling.COLINEAR_OR_PARALLEL_PIXEL_EXPAND_AMOUNT * 2;
+
+    private float minColumnWidth = 0f;
+    private float minRowHeight = 0f;
+    private boolean cellAutocompletion = false;
+    private float cellTextOverflowRatio = 0f;
+
+    public SpreadsheetExtractionAlgorithm() {
+    }
+
+    /**
+     * @see #maxGapBetweenAlignedHorizontalRulings
+     */
+    public SpreadsheetExtractionAlgorithm withMaxGapBetweenAlignedHorizontalRulings(int maxGap) {
+        this.maxGapBetweenAlignedHorizontalRulings = maxGap;
+        return this;
+    }
+
+    /**
+     * @see #maxGapBetweenAlignedVerticalRulings
+     */
+    public SpreadsheetExtractionAlgorithm withMaxGapBetweenAlignedVerticalRulings(int maxGap) {
+        this.maxGapBetweenAlignedVerticalRulings = maxGap;
+        return this;
+    }
+
+    /**
+     * Narrowest column the document is expected to contain. Two vertical rulings closer than this
+     * draw the same border - PDF generators routinely emit a table border as two slightly offset
+     * segments - and are merged instead of enclosing a sliver of a column. 0 disables the merging.
+     */
+    public SpreadsheetExtractionAlgorithm withMinColumnWidth(float minColumnWidth) {
+        this.minColumnWidth = minColumnWidth;
+        return this;
+    }
+
+    /**
+     * Shortest row the document is expected to contain, the horizontal counterpart of
+     * {@link #withMinColumnWidth(float)}.
+     */
+    public SpreadsheetExtractionAlgorithm withMinRowHeight(float minRowHeight) {
+        this.minRowHeight = minRowHeight;
+        return this;
+    }
+
+    /**
+     * Rebuild the cells a table is missing on the left of the ones that were detected, so that every
+     * row of a detected table starts at the same column. Useful on tables whose leading cells have no
+     * border of their own, at the cost of an extra empty column on tables that legitimately have none.
+     */
+    public SpreadsheetExtractionAlgorithm withCellAutocompletion(boolean cellAutocompletion) {
+        this.cellAutocompletion = cellAutocompletion;
+        return this;
+    }
+
+    /**
+     * Fraction of its own width by which a cell is widened before its text is collected, to catch a
+     * trailing letter that the right border of the cell overlaps. 0.01 is enough in practice; 0
+     * (the default) collects strictly what the cell encloses.
+     */
+    public SpreadsheetExtractionAlgorithm withCellTextOverflowRatio(float cellTextOverflowRatio) {
+        this.cellTextOverflowRatio = cellTextOverflowRatio;
+        return this;
+    }
+
+    /**
+     * The configuration NeoLegal runs in production: cell autocompletion on, and a 1% text overflow
+     * so a letter touching the right border of a cell is not dropped.
+     */
+    public static SpreadsheetExtractionAlgorithm neolegalDefaults() {
+        return new SpreadsheetExtractionAlgorithm()
+                .withCellAutocompletion(true)
+                .withCellTextOverflowRatio(0.01f);
+    }
     
     private static final Comparator<Point2D> Y_FIRST_POINT_COMPARATOR = (point1, point2) -> {
         int compareY = compareRounded(point1.getY(), point2.getY());
@@ -57,10 +140,15 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
                 verticalR.add(r);
             }
         }
-        horizontalR = Ruling.collapseOrientedRulings(horizontalR);
-        verticalR = Ruling.collapseOrientedRulings(verticalR);
+        int horizontalExpandAmount = maxGapBetweenAlignedHorizontalRulings / 2;
+        int verticalExpandAmount = maxGapBetweenAlignedVerticalRulings / 2;
+        horizontalR = Ruling.collapseOrientedRulings(horizontalR, horizontalExpandAmount, verticalExpandAmount, minRowHeight);
+        verticalR = Ruling.collapseOrientedRulings(verticalR, verticalExpandAmount, horizontalExpandAmount, minColumnWidth);
         
-        List<Cell> cells = findCells(horizontalR, verticalR);
+        List<Cell> cells = findCells(horizontalR, verticalR,
+                Math.max(Ruling.PERPENDICULAR_PIXEL_EXPAND_AMOUNT, horizontalExpandAmount),
+                Math.max(Ruling.PERPENDICULAR_PIXEL_EXPAND_AMOUNT, verticalExpandAmount),
+                cellAutocompletion);
         List<Rectangle> spreadsheetAreas = findSpreadsheetsFromCells(cells);
         
         List<Table> spreadsheets = new ArrayList<>();
@@ -69,8 +157,7 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
             List<Cell> overlappingCells = new ArrayList<>();
             for (Cell c: cells) {
                 if (c.intersects(area)) {
-
-                    c.setTextElements(TextElement.mergeWords(page.getText(c)));
+                    c.setTextElements(TextElement.mergeWords(page.getText(textArea(c))));
                     overlappingCells.add(c);
                 }
             }
@@ -95,6 +182,18 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
         return spreadsheets;
     }
     
+    /**
+     * The area a cell's text is collected from: the cell itself, widened by
+     * {@link #withCellTextOverflowRatio(float)}.
+     */
+    private Rectangle textArea(Cell cell) {
+        if (cellTextOverflowRatio == 0f) {
+            return cell;
+        }
+        return new Rectangle(cell.getTop(), cell.getLeft(),
+                (float) (cell.getWidth() * (1 + cellTextOverflowRatio)), (float) cell.getHeight());
+    }
+
     public boolean isTabular(Page page) {
         
         // if there's no text at all on the page, it's not a table 
@@ -107,7 +206,7 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
         // removes white "margins")
         Page minimalRegion = page.getArea(Utils.bounds(page.getText()));
         
-        List<? extends Table> tables = new SpreadsheetExtractionAlgorithm().extract(minimalRegion);
+        List<? extends Table> tables = this.extract(minimalRegion);
         if (tables.isEmpty()) {
             return false;
         }
@@ -130,8 +229,15 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
     }
     
     public static List<Cell> findCells(List<Ruling> horizontalRulingLines, List<Ruling> verticalRulingLines) {
+        return findCells(horizontalRulingLines, verticalRulingLines, Ruling.PERPENDICULAR_PIXEL_EXPAND_AMOUNT,
+                Ruling.PERPENDICULAR_PIXEL_EXPAND_AMOUNT, false);
+    }
+
+    public static List<Cell> findCells(List<Ruling> horizontalRulingLines, List<Ruling> verticalRulingLines,
+            int horizontalExpandAmount, int verticalExpandAmount, boolean autocompleteCells) {
         List<Cell> cellsFound = new ArrayList<>();
-        Map<Point2D, Ruling[]> intersectionPoints = Ruling.findIntersections(horizontalRulingLines, verticalRulingLines);
+        Map<Point2D, Ruling[]> intersectionPoints = Ruling.findIntersections(horizontalRulingLines, verticalRulingLines,
+                horizontalExpandAmount, verticalExpandAmount);
         List<Point2D> intersectionPointsList = new ArrayList<>(intersectionPoints.keySet());
         intersectionPointsList.sort(Y_FIRST_POINT_COMPARATOR);
         
@@ -177,7 +283,88 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
         // that aren't connected with an horizontal ruler?
         // see: https://github.com/jazzido/tabula-extractor/issues/78#issuecomment-41481207
         
+        if (autocompleteCells) {
+            List<Cell> missingCells = findGaps(cellsFound);
+            if (!missingCells.isEmpty()) {
+                cellsFound.addAll(missingCells);
+                Utils.sort(cellsFound, Rectangle.ILL_DEFINED_ORDER);
+            }
+        }
         return cellsFound;
+    }
+
+    /**
+     * The cells that {@code cells} is missing on the left of the ones that were detected: one per row
+     * that does not reach the leftmost column, filling either the gap to its left neighbour or the gap
+     * to the left edge of the table.
+     */
+    static List<Cell> findGaps(List<Cell> cells) {
+        List<Cell> gaps = new ArrayList<>();
+        if (cells.isEmpty()) {
+            return gaps;
+        }
+
+        float tableLeft = cells.stream().map(Cell::getLeft).min(Float::compareTo).orElse(0f);
+        for (Cell cell : cells) {
+            if (cell.isEmpty()) {
+                // degenerate cell, it has no row of its own to complete
+                continue;
+            }
+            Optional<Cell> leftNeighbour = findNeighbour(cell, cells, true);
+            if (leftNeighbour.isPresent()) {
+                Cell neighbour = leftNeighbour.get();
+                if (!Utils.feq(neighbour.getRight(), cell.getLeft())) {
+                    gaps.add(new Cell(cell.getTop(), neighbour.getRight(),
+                            cell.getLeft() - neighbour.getRight(), (float) cell.getHeight()));
+                }
+            }
+            else if (!Utils.feq(cell.getLeft(), tableLeft)) {
+                gaps.add(new Cell(cell.getTop(), tableLeft, cell.getLeft() - tableLeft, (float) cell.getHeight()));
+            }
+        }
+
+        return gaps;
+    }
+
+    /**
+     * The cell of {@code cells} on the same row as {@code cell} and closest to it, on its left when
+     * {@code onLeft} is set, on its right otherwise.
+     */
+    static Optional<Cell> findNeighbour(Cell cell, List<Cell> cells, boolean onLeft) {
+        Cell bestCandidate = null;
+        for (Cell candidate : cells) {
+            if (cell == candidate || !sameRow(cell, candidate)) {
+                continue;
+            }
+            if (onLeft) {
+                if (cell.getLeft() >= candidate.getRight()
+                        && (bestCandidate == null || candidate.getRight() > bestCandidate.getRight())) {
+                    bestCandidate = candidate;
+                }
+            }
+            else if (cell.getRight() <= candidate.getLeft()
+                    && (bestCandidate == null || candidate.getLeft() < bestCandidate.getLeft())) {
+                bestCandidate = candidate;
+            }
+        }
+
+        return Optional.ofNullable(bestCandidate);
+    }
+
+    static boolean sameRow(Cell cell, Cell candidate) {
+        if (!isWithin(cell.getTop(), candidate.getBottom(), candidate.getTop()) &&
+                !isWithin(cell.getBottom(), candidate.getBottom(), candidate.getTop()) &&
+                !isWithin(candidate.getTop(), cell.getBottom(), cell.getTop()) &&
+                !isWithin(candidate.getBottom(), cell.getBottom(), cell.getTop())) {
+            return false;
+        }
+
+        // cells stacked on top of each other share a border, that does not put them on the same row
+        return !Utils.feq(cell.getTop(), candidate.getBottom()) && !Utils.feq(cell.getBottom(), candidate.getTop());
+    }
+
+    static boolean isWithin(float x, float start, float end) {
+        return start < end ? (x >= start && x <= end) : (x <= start && x >= end);
     }
     
     public static List<Rectangle> findSpreadsheetsFromCells(List<? extends Rectangle> cells) {
