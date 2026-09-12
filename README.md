@@ -15,12 +15,12 @@ This fork is published to Maven Central as `fr.neolegal:tabula`:
 <dependency>
     <groupId>fr.neolegal</groupId>
     <artifactId>tabula</artifactId>
-    <version>1.1.1</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 
 ```groovy
-implementation 'fr.neolegal:tabula:1.1.1'
+implementation 'fr.neolegal:tabula:1.2.0'
 ```
 
 A jar with all dependencies included, that works on Mac, Windows and Linux, is on the [releases page](../../releases).
@@ -30,7 +30,7 @@ A jar with all dependencies included, that works on Mac, Windows and Linux, is o
 `tabula-java` provides a command line application:
 
 ```
-$ java -jar target/tabula-1.1.1-jar-with-dependencies.jar --help
+$ java -jar target/tabula-1.2.0-jar-with-dependencies.jar --help
 usage: tabula [-a <AREA>] [-b <DIRECTORY>] [-c <COLUMNS>] [-f <FORMAT>]
        [-g] [-h] [-i] [-l] [-n] [-o <OUTFILE>] [-p <PAGES>] [-r] [-s
        <PASSWORD>] [-t] [-u] [-v]
@@ -85,7 +85,7 @@ Tabula helps you extract tables from PDFs
  -v,--version               Print version and exit.
 ```
 
-It also includes a debugging tool, run `java -cp ./target/tabula-1.1.1-jar-with-dependencies.jar technology.tabula.debug.Debug -h` for the available options.
+It also includes a debugging tool, run `java -cp ./target/tabula-1.2.0-jar-with-dependencies.jar technology.tabula.debug.Debug -h` for the available options.
 
 You can also integrate `tabula-java` with any JVM language. For Java examples, see the [`tests`](src/test/java/technology/tabula/) folder.
 
@@ -145,6 +145,19 @@ PDFs of this repository's test corpus, this configuration changes the detected g
 for instance a disclosure table of 88 rows spaced about 9 points apart comes out as 44. Use it if
 your documents look like NeoLegal's; build your own configuration otherwise, starting from the
 neutral default and raising one threshold at a time.
+
+### Upgrading from 1.1.x
+
+`neolegalDefaults()` now also sets the four alignment thresholds (30 / 15 / 9 / 9 above). In 1.1.x it
+only enabled cell autocompletion and the text overflow, leaving the thresholds at their neutral,
+upstream-equivalent values — so **callers of `neolegalDefaults()` will see a different grid** on
+documents whose borders sit within those distances of each other. To keep the 1.1.x behaviour:
+
+```java
+new SpreadsheetExtractionAlgorithm()
+        .withCellAutocompletion(true)
+        .withCellTextOverflowRatio(0.01f);
+```
 
 ### Upgrading from 1.0.x
 
