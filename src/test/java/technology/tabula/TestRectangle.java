@@ -1,6 +1,6 @@
 package technology.tabula;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
@@ -8,9 +8,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 public class TestRectangle {
 
@@ -216,7 +216,7 @@ public class TestRectangle {
 
 		};
 
-		Assert.assertArrayEquals(expectedPoints, points);
+		Assertions.assertArrayEquals(expectedPoints, points);
 
 	}
 
@@ -255,7 +255,7 @@ public class TestRectangle {
 		assertTrue(a.compareTo(c) < 0);
 	}
 
-	@Test @Ignore
+	@Test @Disabled
 	public void testTransitiveComparison2() {
 		//                     +-------+
 		//                     |       |
@@ -274,7 +274,7 @@ public class TestRectangle {
 		assertTrue(a.compareTo(c) < 0);
 	}
 
-	@Test @Ignore
+	@Test @Disabled
 	public void testWellDefinedComparison1() {
 		Rectangle a = new Rectangle(2,0,2,2);
 		Rectangle b = new Rectangle(1,1,2,2);

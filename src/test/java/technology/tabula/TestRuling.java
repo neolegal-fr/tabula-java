@@ -1,15 +1,15 @@
 package technology.tabula;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class TestRuling {
 	
 	Ruling ruling;
 	
-	@Before
+	@BeforeEach
 	public void setUpRuling() {
 		ruling = new Ruling(0, 0, 10, 10);
 	}
@@ -47,44 +47,51 @@ public class TestRuling {
 		assertTrue(ruling.nearlyIntersects(another));
 	}
 	
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testGetPositionError(){
-		Ruling other = new Ruling(0, 0, 1, 1);
-		other.getPosition();
-		fail();
+		assertThrows(UnsupportedOperationException.class, () -> {
+			Ruling other = new Ruling(0, 0, 1, 1);
+			other.getPosition();
+		});
 	}
 	
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testSetPositionError(){
-		Ruling other = new Ruling(0, 0, 1, 1);
-		other.setPosition(5f);
-		fail();
+		assertThrows(UnsupportedOperationException.class, () -> {
+			Ruling other = new Ruling(0, 0, 1, 1);
+			other.setPosition(5f);
+		});
 	}
 	
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testsetPosition(){
-		ruling.setPosition(0);
+		assertThrows(UnsupportedOperationException.class, () -> {
+			ruling.setPosition(0);
+		});
 	}
 	
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testGetStartError(){
-		Ruling other = new Ruling(0, 0, 1, 1);
-		other.getStart();
-		fail();
+		assertThrows(UnsupportedOperationException.class, () -> {
+			Ruling other = new Ruling(0, 0, 1, 1);
+			other.getStart();
+		});
 	}
 	
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testGetEndError(){
-		Ruling other = new Ruling(0, 0, 1, 1);
-		other.getEnd();
-		fail();
+		assertThrows(UnsupportedOperationException.class, () -> {
+			Ruling other = new Ruling(0, 0, 1, 1);
+			other.getEnd();
+		});
 	}
 	
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testSetEndError(){
-		Ruling other = new Ruling(0, 0, 1, 1);
-		other.setEnd(5f);
-		fail();
+		assertThrows(UnsupportedOperationException.class, () -> {
+			Ruling other = new Ruling(0, 0, 1, 1);
+			other.setEnd(5f);
+		});
 	}
 	
 	

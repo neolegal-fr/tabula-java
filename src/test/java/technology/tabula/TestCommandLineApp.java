@@ -1,6 +1,6 @@
 package technology.tabula;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,14 +10,13 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.ParseException;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public class TestCommandLineApp {
 
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
+    @TempDir
+    public Path folder;
 
     private String csvFromCommandLineArgs(String[] args) throws ParseException {
         CommandLineParser parser = new DefaultParser();
@@ -71,7 +70,7 @@ public class TestCommandLineApp {
 
         String expectedCsv = UtilsForTesting.loadCsv("src/test/resources/technology/tabula/csv/spreadsheet_no_bounding_frame.csv");
 
-        File newFile = folder.newFile();
+        File newFile = Files.createTempFile(folder, null, null).toFile();
         this.csvFromCommandLineArgs(new String[]{
                 "src/test/resources/technology/tabula/spreadsheet_no_bounding_frame.pdf",
                 "-p", "1", "-a",
@@ -138,14 +137,14 @@ public class TestCommandLineApp {
         assertEquals("FLA Audit Profile,,,,,,,,,", s.split("\\r?\\n")[0]);
     }
 
-    @Test(expected=org.apache.commons.cli.ParseException.class)
+    @Test
     public void testEncryptedWrongPassword() throws ParseException {
-        String s = this.csvFromCommandLineArgs(new String[]{
+        assertThrows(org.apache.commons.cli.ParseException.class, () -> this.csvFromCommandLineArgs(new String[]{
                 "src/test/resources/technology/tabula/encrypted.pdf",
                 "-s", "wrongpassword",
                 "-p", "1",
                 "-f", "CSV"
-        });
+        }));
     }
 
     @Test

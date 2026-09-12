@@ -1,8 +1,9 @@
 package technology.tabula;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.awt.geom.Point2D;
 import java.io.File;
@@ -17,7 +18,7 @@ import org.apache.pdfbox.rendering.ImageType;
 import org.apache.commons.cli.ParseException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class TestUtils {
 
@@ -71,14 +72,18 @@ public class TestUtils {
         assertNull(rv);
     }
 
-    @Test(expected=ParseException.class)
+    @Test
     public void testExceptionInParsePages() throws ParseException {
-        Utils.parsePagesOption("1-4,24-22");
+        assertThrows(ParseException.class, () -> {
+            Utils.parsePagesOption("1-4,24-22");
+        });
     }
 
-    @Test(expected=ParseException.class)
+    @Test
     public void testAnotherExceptionInParsePages() throws ParseException {
-        Utils.parsePagesOption("quuxor");
+        assertThrows(ParseException.class, () -> {
+            Utils.parsePagesOption("quuxor");
+        });
     }
 
     @Test

@@ -9,7 +9,7 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 public class UtilsForTesting {
 
@@ -45,7 +45,7 @@ public class UtilsForTesting {
             }
         }
         
-        Assert.assertEquals(maxColCount, table.getColCount());
+        Assertions.assertEquals(maxColCount, table.getColCount());
         
         String[][] rv = new String[tableRows.size()][maxColCount];
 

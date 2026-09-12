@@ -1,6 +1,6 @@
 package technology.tabula;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,7 +9,7 @@ import java.util.List;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class TestObjectExtractor {
 
@@ -20,12 +20,14 @@ public class TestObjectExtractor {
         oe.extract().next();
     }*/
 
-    @Test(expected = IOException.class)
+    @Test
     public void testEmptyOnEncryptedFileRaisesException() throws IOException {
-        PDDocument pdf_document = Loader.loadPDF(new File("src/test/resources/technology/tabula/encrypted.pdf"));
-        try (ObjectExtractor oe = new ObjectExtractor(pdf_document)) {
-          oe.extract().next();
-        }
+        assertThrows(IOException.class, () -> {
+            PDDocument pdf_document = Loader.loadPDF(new File("src/test/resources/technology/tabula/encrypted.pdf"));
+            try (ObjectExtractor oe = new ObjectExtractor(pdf_document)) {
+              oe.extract().next();
+            }
+        });
     }
 
     @Test
@@ -113,14 +115,16 @@ public class TestObjectExtractor {
 
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
+    @Test
     public void testExtractWrongPageNumber() throws IOException {
-        PDDocument pdf_document = Loader.loadPDF(new File("src/test/resources/technology/tabula/S2MNCEbirdisland.pdf"));
-        assertEquals(2, pdf_document.getNumberOfPages());
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            PDDocument pdf_document = Loader.loadPDF(new File("src/test/resources/technology/tabula/S2MNCEbirdisland.pdf"));
+            assertEquals(2, pdf_document.getNumberOfPages());
 
-        try (ObjectExtractor oe = new ObjectExtractor(pdf_document)) {
-          oe.extract(3);
-        }
+            try (ObjectExtractor oe = new ObjectExtractor(pdf_document)) {
+              oe.extract(3);
+            }
+        });
     }
 
     @Test

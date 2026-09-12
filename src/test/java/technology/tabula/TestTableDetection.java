@@ -3,11 +3,10 @@ package technology.tabula;
 import com.google.gson.Gson;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -22,13 +21,12 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Created by matt on 2015-12-14.
  */
-@RunWith(Parameterized.class)
 public class TestTableDetection {
 
     private static int numTests = 0;
@@ -89,23 +87,22 @@ public class TestTableDetection {
         }
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void disableLogging() {
         Logger pdfboxLogger = Logger.getLogger("org.apache.pdfbox");
         defaultLogLevel = pdfboxLogger.getLevel();
         pdfboxLogger.setLevel(Level.OFF);
     }
 
-    @AfterClass
+    @AfterAll
     public static void enableLogging() {
         Logger.getLogger("org.apache.pdfbox").setLevel(defaultLogLevel);
     }
 
-    @Parameterized.Parameters
-    public static Collection<Object[]> data() {
+    public static Collection<File> data() {
         String[] regionCodes = {"eu", "us"};
 
-        ArrayList<Object[]> data = new ArrayList<>();
+        ArrayList<File> data = new ArrayList<>();
 
         for (String regionCode : regionCodes) {
             String directoryName = "src/test/resources/technology/tabula/icdar2013-dataset/competition-dataset-" + regionCode + "/";
@@ -114,7 +111,7 @@ public class TestTableDetection {
             File[] pdfs = dir.listFiles((dir1, name) -> name.toLowerCase().endsWith(".pdf"));
 
             for (File pdf : pdfs) {
-                data.add(new Object[]{pdf});
+                data.add(pdf);
             }
         }
 
@@ -128,18 +125,6 @@ public class TestTableDetection {
     private int numCorrectlyDetectedTables = 0;
     private int numErroneouslyDetectedTables = 0;
 
-    public TestTableDetection(File pdf) {
-        this.pdf = pdf;
-        this.status = TestStatus.load(pdf.getAbsolutePath());
-
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        try {
-            this.builder = factory.newDocumentBuilder();
-        } catch (Exception e) {
-            // ignored
-        }
-    }
-
     private void printTables(Map<Integer, List<Rectangle>> tables) {
         for (Integer page : tables.keySet()) {
             System.out.println("Page " + page.toString());
@@ -149,8 +134,13 @@ public class TestTableDetection {
         }
     }
 
-    @Test
-    public void testDetectionOfTables() throws Exception {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testDetectionOfTables(File pdf) throws Exception {
+        this.pdf = pdf;
+        this.status = TestStatus.load(pdf.getAbsolutePath());
+        this.builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+
         numTests++;
 
         // xml parsing stuff for ground truth
@@ -274,11 +264,11 @@ public class TestTableDetection {
             // compare to baseline
             if (this.status.expectedFailure) {
                 // make sure the failure didn't get worse
-                assertTrue("This test is an expected failure, but it now detects even fewer tables.", this.numCorrectlyDetectedTables >= this.status.numCorrectlyDetectedTables);
-                assertTrue("This test is an expected failure, but it now detects more bad tables.", this.numErroneouslyDetectedTables <= this.status.numErroneouslyDetectedTables);
-                assertTrue("This test used to fail but now it passes! Hooray! Please update the test's JSON file accordingly.", failed);
+                assertTrue(this.numCorrectlyDetectedTables >= this.status.numCorrectlyDetectedTables, "This test is an expected failure, but it now detects even fewer tables.");
+                assertTrue(this.numErroneouslyDetectedTables <= this.status.numErroneouslyDetectedTables, "This test is an expected failure, but it now detects more bad tables.");
+                assertTrue(failed, "This test used to fail but now it passes! Hooray! Please update the test's JSON file accordingly.");
             } else {
-                assertFalse("Table detection failed. Please see the error messages for more information.", failed);
+                assertFalse(failed, "Table detection failed. Please see the error messages for more information.");
             }
         }
     }

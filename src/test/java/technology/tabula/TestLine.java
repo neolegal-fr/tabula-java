@@ -1,13 +1,13 @@
 package technology.tabula;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class TestLine {
 
@@ -48,13 +48,13 @@ public class TestLine {
 		assertEquals("testtest", line.getTextElements().get(0).getText());
 		}
 	
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testErrorAddTextChunkIntTextChunk() {
 		Line line = new Line();
 		
 		TextElement tElement = new TextElement(0, 0, 0, 0,new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 10, "test", 5);
 		TextChunk tChunk = new TextChunk(tElement);
-		line.addTextChunk(-1, tChunk);
+		assertThrows(IllegalArgumentException.class, () -> line.addTextChunk(-1, tChunk));
 		}
 	
 	@Test

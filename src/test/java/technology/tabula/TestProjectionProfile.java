@@ -1,6 +1,6 @@
 package technology.tabula;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,15 +9,15 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class TestProjectionProfile {
 	
 	ProjectionProfile pProfile;
 	Page page;
 
-	@Before
+	@BeforeEach
 	public void setUpProjectionProfile() {
 		PDPage pdPage = new PDPage();
 		PDDocument pdDocument = new PDDocument();
