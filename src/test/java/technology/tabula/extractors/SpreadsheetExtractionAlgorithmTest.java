@@ -221,6 +221,40 @@ public class SpreadsheetExtractionAlgorithmTest {
                 .build();
     }
 
+    /**
+     * NeoLegal's production configuration, pinned value by value: these thresholds are tuned on
+     * NeoLegal's own documents, and changing one changes what every caller of neolegalDefaults()
+     * extracts, so it should be a deliberate act rather than a side effect.
+     */
+    @Test
+    public void neolegalDefaults_pinsTheProductionConfiguration() {
+        SpreadsheetExtractionAlgorithm sea = SpreadsheetExtractionAlgorithm.neolegalDefaults();
+
+        assertTrue(sea.cellAutocompletion);
+        assertEquals(0.01f, sea.cellTextOverflowRatio, 0f);
+        assertEquals(30, sea.maxGapBetweenAlignedHorizontalRulings);
+        assertEquals(15, sea.maxGapBetweenAlignedVerticalRulings);
+        assertEquals(9f, sea.minColumnWidth, 0f);
+        assertEquals(9f, sea.minRowHeight, 0f);
+    }
+
+    /**
+     * And the default constructor stays neutral, which is what keeps the fork rebasable: the whole
+     * upstream test suite runs against it unmodified.
+     */
+    @Test
+    public void defaultConstructor_staysNeutral() {
+        SpreadsheetExtractionAlgorithm sea = new SpreadsheetExtractionAlgorithm();
+
+        assertFalse(sea.cellAutocompletion);
+        assertEquals(0f, sea.cellTextOverflowRatio, 0f);
+        assertEquals(0f, sea.minColumnWidth, 0f);
+        assertEquals(0f, sea.minRowHeight, 0f);
+        // the historical expansion amount, applied on each side of a ruling
+        assertEquals(Ruling.COLINEAR_OR_PARALLEL_PIXEL_EXPAND_AMOUNT * 2, sea.maxGapBetweenAlignedHorizontalRulings);
+        assertEquals(Ruling.COLINEAR_OR_PARALLEL_PIXEL_EXPAND_AMOUNT * 2, sea.maxGapBetweenAlignedVerticalRulings);
+    }
+
     @Test
     public void neolegalDefaults_enablesAutocompletionAndTextOverflow() throws IOException {
         Page page = UtilsForTesting.getAreaFromPage(
@@ -228,8 +262,11 @@ public class SpreadsheetExtractionAlgorithmTest {
                 150.56f, 58.9f, 654.7f, 536.12f);
 
         Table table = SpreadsheetExtractionAlgorithm.neolegalDefaults().extract(page).get(0);
+        // the leading cell rebuilt by autocompletion, and a grid the loose alignment thresholds
+        // leave intact on this document
         assertEquals(7, table.getColCount());
         assertEquals("PRODUCTS", table.getCell(1, 0).getText());
+        assertEquals(28, table.getRowCount());
     }
 
     @Test

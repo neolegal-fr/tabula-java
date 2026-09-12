@@ -123,8 +123,28 @@ SpreadsheetExtractionAlgorithm sea = new SpreadsheetExtractionAlgorithm()
         .withMaxGapBetweenAlignedVerticalRulings(4);
 ```
 
+### `neolegalDefaults()`
+
 `SpreadsheetExtractionAlgorithm.neolegalDefaults()` returns the configuration NeoLegal runs in
-production, equivalent to `withCellAutocompletion(true).withCellTextOverflowRatio(0.01f)`.
+production, tuned on the documents NeoLegal processes:
+
+```java
+new SpreadsheetExtractionAlgorithm()
+        .withCellAutocompletion(true)
+        .withCellTextOverflowRatio(0.01f)
+        .withMaxGapBetweenAlignedHorizontalRulings(30)
+        .withMaxGapBetweenAlignedVerticalRulings(15)
+        .withMinColumnWidth(9f)
+        .withMinRowHeight(9f);
+```
+
+**These thresholds are deliberately permissive and are not general-purpose defaults.** A 9 point
+minimum row height means any two horizontal borders less than 9 points apart draw the same border,
+which merges the rows of a table whose rows are that close together. Measured on the 37 unrelated
+PDFs of this repository's test corpus, this configuration changes the detected grid of 11 of them —
+for instance a disclosure table of 88 rows spaced about 9 points apart comes out as 44. Use it if
+your documents look like NeoLegal's; build your own configuration otherwise, starting from the
+neutral default and raising one threshold at a time.
 
 ### Upgrading from 1.0.x
 

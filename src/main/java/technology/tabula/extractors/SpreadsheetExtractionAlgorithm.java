@@ -18,15 +18,15 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
      * to be treated as a single one. Also raises, by the same amount, how far a horizontal ruling may
      * be stretched to reach the vertical border it is supposed to meet.
      */
-    private int maxGapBetweenAlignedHorizontalRulings = Ruling.COLINEAR_OR_PARALLEL_PIXEL_EXPAND_AMOUNT * 2;
+    int maxGapBetweenAlignedHorizontalRulings = Ruling.COLINEAR_OR_PARALLEL_PIXEL_EXPAND_AMOUNT * 2;
 
     /** Same as {@link #maxGapBetweenAlignedHorizontalRulings}, for vertical rulings. */
-    private int maxGapBetweenAlignedVerticalRulings = Ruling.COLINEAR_OR_PARALLEL_PIXEL_EXPAND_AMOUNT * 2;
+    int maxGapBetweenAlignedVerticalRulings = Ruling.COLINEAR_OR_PARALLEL_PIXEL_EXPAND_AMOUNT * 2;
 
-    private float minColumnWidth = 0f;
-    private float minRowHeight = 0f;
-    private boolean cellAutocompletion = false;
-    private float cellTextOverflowRatio = 0f;
+    float minColumnWidth = 0f;
+    float minRowHeight = 0f;
+    boolean cellAutocompletion = false;
+    float cellTextOverflowRatio = 0f;
 
     /**
      * @see #maxGapBetweenAlignedHorizontalRulings
@@ -84,13 +84,24 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
     }
 
     /**
-     * The configuration NeoLegal runs in production: cell autocompletion on, and a 1% text overflow
-     * so a letter touching the right border of a cell is not dropped.
+     * The configuration NeoLegal runs in production, tuned on the documents NeoLegal processes:
+     * cell autocompletion on, a 1% text overflow so a letter touching the right border of a cell is
+     * not dropped, and alignment thresholds loose enough for borders that are drawn well off the grid.
+     *
+     * <p>These thresholds are deliberately permissive and are <em>not</em> general-purpose defaults.
+     * A 9 point minimum row height means any two horizontal borders less than 9 points apart draw the
+     * same border, which merges the rows of a table whose rows are that close together; on a corpus of
+     * 37 unrelated PDFs this configuration changes the detected grid of 11 of them. Reach for it if
+     * your documents look like NeoLegal's, and build your own configuration otherwise.
      */
     public static SpreadsheetExtractionAlgorithm neolegalDefaults() {
         return new SpreadsheetExtractionAlgorithm()
                 .withCellAutocompletion(true)
-                .withCellTextOverflowRatio(0.01f);
+                .withCellTextOverflowRatio(0.01f)
+                .withMaxGapBetweenAlignedHorizontalRulings(30)
+                .withMaxGapBetweenAlignedVerticalRulings(15)
+                .withMinColumnWidth(9f)
+                .withMinRowHeight(9f);
     }
     
     private static final Comparator<Point2D> Y_FIRST_POINT_COMPARATOR = (point1, point2) -> {
