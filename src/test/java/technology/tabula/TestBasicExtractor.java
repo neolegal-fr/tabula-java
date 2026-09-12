@@ -1,9 +1,10 @@
 package technology.tabula;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,10 +12,9 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.junit.jupiter.api.Test;
+
 import technology.tabula.extractors.BasicExtractionAlgorithm;
 import technology.tabula.writers.CSVWriter;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 public class TestBasicExtractor {
 
@@ -133,8 +133,8 @@ public class TestBasicExtractor {
         Table table = bea.extract(page).get(0);
         List<RectangularTextContainer> firstRow = table.getRows().get(0);
 
-        assertEquals("ALLEGIANT AIR", firstRow.get(1).getText());
-        assertEquals("ALLEGIANT AIR LLC", firstRow.get(2).getText());
+        assertTrue(firstRow.get(1).getText().equals("ALLEGIANT AIR"));
+        assertTrue(firstRow.get(2).getText().equals("ALLEGIANT AIR LLC"));
         page.getPDDoc().close();
     }
 
@@ -162,8 +162,8 @@ public class TestBasicExtractor {
         Table table = bea.extract(page).get(0);
         List<RectangularTextContainer> sixthRow = table.getRows().get(5);
 
-        assertEquals("VALSANGIACOMO BLANC", sixthRow.get(0).getText());
-        assertEquals("OFERNANDO JORGE", sixthRow.get(1).getText());
+        assertTrue(sixthRow.get(0).getText().equals("VALSANGIACOMO BLANC"));
+        assertTrue(sixthRow.get(1).getText().equals("OFERNANDO JORGE"));
         page.getPDDoc().close();
     }
 
@@ -203,8 +203,8 @@ public class TestBasicExtractor {
         List<List<RectangularTextContainer>> rows = table.getRows();
         List<RectangularTextContainer> firstRow = rows.get(0);
         List<RectangularTextContainer> lastRow = rows.get(rows.size() - 1);
-        assertEquals("Violent crime  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .", firstRow.get(0).getText());
-        assertEquals("(X)", lastRow.get(lastRow.size() - 1).getText());
+        assertTrue(firstRow.get(0).getText().equals("Violent crime. .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  ."));
+        assertTrue(lastRow.get(lastRow.size() - 1).getText().equals("(X)"));
         page.getPDDoc().close();
     }
 
@@ -288,7 +288,7 @@ public class TestBasicExtractor {
     @Test
     public void testNaturalOrderOfRectanglesOneMoreTime() throws IOException {
         CSVParser parse = org.apache.commons.csv.CSVParser.parse(new File("src/test/resources/technology/tabula/csv/TestBasicExtractor-RECTANGLE_TEST_NATURAL_ORDER.csv"),
-                StandardCharsets.UTF_8,
+                Charset.forName("utf-8"),
                 CSVFormat.DEFAULT);
 
         List<Rectangle> rectangles = new ArrayList<>();

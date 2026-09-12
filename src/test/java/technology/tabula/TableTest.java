@@ -1,13 +1,12 @@
 package technology.tabula;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
 public class TableTest {
 
-	@Test
-	public void testEmpty() {
+	@Test public void testEmpty() {
 		Table empty = Table.empty();
 
 		assertEquals(TextChunk.EMPTY, empty.getCell(0, 0));

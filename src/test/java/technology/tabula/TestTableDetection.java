@@ -1,6 +1,7 @@
 package technology.tabula;
 
 import com.google.gson.Gson;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -15,7 +16,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.*;
 import java.util.logging.Level;
@@ -99,29 +99,28 @@ public class TestTableDetection {
         Logger.getLogger("org.apache.pdfbox").setLevel(defaultLogLevel);
     }
 
-    public static Collection<Object[]> data() {
+    public static Collection<File> data() {
         String[] regionCodes = {"eu", "us"};
 
-        ArrayList<Object[]> data = new ArrayList<>();
+        ArrayList<File> data = new ArrayList<>();
 
         for (String regionCode : regionCodes) {
             String directoryName = "src/test/resources/technology/tabula/icdar2013-dataset/competition-dataset-" + regionCode + "/";
             File dir = new File(directoryName);
 
-            File[] pdfs = dir.listFiles(new FilenameFilter() {
-                @Override
-                public boolean accept(File dir, String name) {
-                    return name.toLowerCase().endsWith(".pdf");
-                }
-            });
+            File[] pdfs = dir.listFiles((dir1, name) -> name.toLowerCase().endsWith(".pdf"));
 
             for (File pdf : pdfs) {
-                data.add(new Object[]{pdf});
+                data.add(pdf);
             }
         }
 
         return data;
     }
+
+    private File pdf;
+    private DocumentBuilder builder;
+    private TestStatus status;
 
     private int numCorrectlyDetectedTables = 0;
     private int numErroneouslyDetectedTables = 0;
@@ -138,26 +137,20 @@ public class TestTableDetection {
     @ParameterizedTest
     @MethodSource("data")
     public void testDetectionOfTables(File pdf) throws Exception {
-        DocumentBuilder builder = null;
-        TestStatus status = null;
-
-        status = TestStatus.load(pdf.getAbsolutePath());
-
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        try {
-            builder = factory.newDocumentBuilder();
-        } catch (Exception e) {
-            // ignored
-        }
+        this.pdf = pdf;
+        this.status = TestStatus.load(pdf.getAbsolutePath());
+        this.builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 
         numTests++;
 
         // xml parsing stuff for ground truth
-        Document regionDocument = builder.parse(pdf.getAbsolutePath().replace(".pdf", "-reg.xml"));
+        Document regionDocument = this.builder.parse(this.pdf.getAbsolutePath().replace(".pdf", "-reg.xml"));
         NodeList tables = regionDocument.getElementsByTagName("table");
 
         // tabula extractors
-        PDDocument pdfDocument = PDDocument.load(pdf);
+
+
+        PDDocument pdfDocument = Loader.loadPDF(this.pdf);
         ObjectExtractor extractor = new ObjectExtractor(pdfDocument);
 
         // parse expected tables from the ground truth dataset
@@ -208,16 +201,16 @@ public class TestTableDetection {
         while (pages.hasNext()) {
             Page page = pages.next();
             List<Rectangle> tablesOnPage = detectionAlgorithm.detect(page);
-            if (tablesOnPage.size() > 0) {
-                detectedTables.put(Integer.valueOf(page.getPageNumber()), tablesOnPage);
+            if (!tablesOnPage.isEmpty()) {
+                detectedTables.put(page.getPageNumber(), tablesOnPage);
             }
         }
 
         // now compare
-        System.out.println("Testing " + pdf.getName());
+        System.out.println("Testing " + this.pdf.getName());
 
         List<String> errors = new ArrayList<>();
-        status.numExpectedTables = numExpectedTables;
+        this.status.numExpectedTables = numExpectedTables;
         totalExpectedTables += numExpectedTables;
 
         for (Integer page : expectedTables.keySet()) {
@@ -261,18 +254,18 @@ public class TestTableDetection {
         System.out.println(totalErroneouslyDetectedTables + " tables incorrectly detected");
 
 
-        if (status.isFirstRun()) {
+        if (this.status.isFirstRun()) {
             // make the baseline
-            status.expectedFailure = failed;
-            status.numCorrectlyDetectedTables = this.numCorrectlyDetectedTables;
-            status.numErroneouslyDetectedTables = this.numErroneouslyDetectedTables;
-            status.save();
+            this.status.expectedFailure = failed;
+            this.status.numCorrectlyDetectedTables = this.numCorrectlyDetectedTables;
+            this.status.numErroneouslyDetectedTables = this.numErroneouslyDetectedTables;
+            this.status.save();
         } else {
             // compare to baseline
-            if (status.expectedFailure) {
+            if (this.status.expectedFailure) {
                 // make sure the failure didn't get worse
-                assertTrue(this.numCorrectlyDetectedTables >= status.numCorrectlyDetectedTables, "This test is an expected failure, but it now detects even fewer tables.");
-                assertTrue(this.numErroneouslyDetectedTables <= status.numErroneouslyDetectedTables, "This test is an expected failure, but it now detects more bad tables.");
+                assertTrue(this.numCorrectlyDetectedTables >= this.status.numCorrectlyDetectedTables, "This test is an expected failure, but it now detects even fewer tables.");
+                assertTrue(this.numErroneouslyDetectedTables <= this.status.numErroneouslyDetectedTables, "This test is an expected failure, but it now detects more bad tables.");
                 assertTrue(failed, "This test used to fail but now it passes! Hooray! Please update the test's JSON file accordingly.");
             } else {
                 assertFalse(failed, "Table detection failed. Please see the error messages for more information.");

@@ -1,15 +1,15 @@
 package technology.tabula;
 
+import java.io.*;
+import java.nio.charset.Charset;
+import java.util.List;
+
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
-
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Assertions;
 
 public class UtilsForTesting {
 
@@ -24,10 +24,9 @@ public class UtilsForTesting {
     public static Page getPage(String path, int pageNumber) throws IOException {
         ObjectExtractor oe = null;
         try {
-            PDDocument document = PDDocument.load(new File(path));
+            PDDocument document = Loader.loadPDF(new File(path));
             oe = new ObjectExtractor(document);
-            Page page = oe.extract(pageNumber);
-            return page;
+            return oe.extract(pageNumber);
         } finally {
             if (oe != null)
                 oe.close();
@@ -45,9 +44,9 @@ public class UtilsForTesting {
                 maxColCount = row.size();
             }
         }
-
-        assertEquals(maxColCount, table.getColCount());
-
+        
+        Assertions.assertEquals(maxColCount, table.getColCount());
+        
         String[][] rv = new String[tableRows.size()][maxColCount];
 
         for (int i = 0; i < tableRows.size(); i++) {
@@ -61,14 +60,14 @@ public class UtilsForTesting {
     }
 
     public static String loadJson(String path) throws IOException {
-
-        StringBuilder stringBuilder = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(path), StandardCharsets.UTF_8))) {
-            String line = null;
-            while ((line = reader.readLine()) != null) {
-                stringBuilder.append(line);
-            }
-        }
+ 
+	    	StringBuilder stringBuilder = new StringBuilder();
+	    try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(path), "UTF-8"))) {
+	        String line = null;
+	        while ((line = reader.readLine()) != null) {
+	            stringBuilder.append(line);
+	        }
+	    }
 
         return stringBuilder.toString();
 
@@ -77,7 +76,7 @@ public class UtilsForTesting {
     public static String loadCsv(String path) throws IOException {
 
         StringBuilder out = new StringBuilder();
-        CSVParser parse = org.apache.commons.csv.CSVParser.parse(new File(path), StandardCharsets.UTF_8, CSVFormat.EXCEL);
+        CSVParser parse = org.apache.commons.csv.CSVParser.parse(new File(path), Charset.forName("utf-8"), CSVFormat.EXCEL);
 
         CSVPrinter printer = new CSVPrinter(out, CSVFormat.EXCEL);
         printer.printRecords(parse);

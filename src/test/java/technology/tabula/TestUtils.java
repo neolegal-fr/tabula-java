@@ -1,5 +1,10 @@
 package technology.tabula;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.awt.geom.Point2D;
 import java.io.File;
 import java.io.IOException;
@@ -8,13 +13,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.commons.cli.ParseException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 public class TestUtils {
 
@@ -69,13 +73,17 @@ public class TestUtils {
     }
 
     @Test
-    public void testExceptionInParsePages() {
-        assertThrows(ParseException.class, () -> Utils.parsePagesOption("1-4,24-22"));
+    public void testExceptionInParsePages() throws ParseException {
+        assertThrows(ParseException.class, () -> {
+            Utils.parsePagesOption("1-4,24-22");
+        });
     }
 
     @Test
-    public void testAnotherExceptionInParsePages() {
-        assertThrows(ParseException.class, () -> Utils.parsePagesOption("quuxor"));
+    public void testAnotherExceptionInParsePages() throws ParseException {
+        assertThrows(ParseException.class, () -> {
+            Utils.parsePagesOption("quuxor");
+        });
     }
 
     @Test
@@ -120,7 +128,7 @@ public class TestUtils {
 
     @Test
     public void testJPEG2000DoesNotRaise() throws IOException {
-        PDDocument pdf_document = PDDocument.load(new File("src/test/resources/technology/tabula/jpeg2000.pdf"));
+        PDDocument pdf_document = Loader.loadPDF(new File("src/test/resources/technology/tabula/jpeg2000.pdf"));
         PDPage page = pdf_document.getPage(0);
         Utils.pageConvertToImage(pdf_document, page, 360, ImageType.RGB);
     }

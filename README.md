@@ -1,20 +1,36 @@
-tabula-java [![Build Status](https://travis-ci.org/tabulapdf/tabula-java.svg?branch=master)](https://travis-ci.org/tabulapdf/tabula-java)
-===========
+tabula-java — NeoLegal fork [![Java CI](https://github.com/neolegal-fr/tabula-java/actions/workflows/tests.yml/badge.svg)](https://github.com/neolegal-fr/tabula-java/actions/workflows/tests.yml)
+===========================
 
 `tabula-java` is a library for extracting tables from PDF files — it is the table extraction engine that powers [Tabula](http://tabula.technology/) ([repo](http://github.com/tabulapdf/tabula)). You can use `tabula-java` as a command-line tool to programmatically extract tables from PDFs.
+
+This repository is [NeoLegal](https://neolegal.fr)'s fork of [tabulapdf/tabula-java](https://github.com/tabulapdf/tabula-java). It follows upstream and adds options for PDFs whose table borders are drawn imprecisely — see [NeoLegal fork](#neolegal-fork) below. **Every option is off by default: an unconfigured extractor behaves exactly like upstream.**
 
 © 2014-2020 Manuel Aristarán. Available under MIT License. See [`LICENSE`](LICENSE).
 
 ## Download
 
-Download a version of the tabula-java's jar, with all dependencies included, that works on Mac, Windows and Linux from our [releases page](../../releases).
+This fork is published to Maven Central as `fr.neolegal:tabula`:
+
+```xml
+<dependency>
+    <groupId>fr.neolegal</groupId>
+    <artifactId>tabula</artifactId>
+    <version>1.1.0</version>
+</dependency>
+```
+
+```groovy
+implementation 'fr.neolegal:tabula:1.1.0'
+```
+
+A jar with all dependencies included, that works on Mac, Windows and Linux, is on the [releases page](../../releases).
 
 ## Commandline Usage Examples
 
 `tabula-java` provides a command line application:
 
 ```
-$ java -jar target/tabula-1.0.5-jar-with-dependencies.jar --help
+$ java -jar target/tabula-1.1.0-jar-with-dependencies.jar --help
 usage: tabula [-a <AREA>] [-b <DIRECTORY>] [-c <COLUMNS>] [-f <FORMAT>]
        [-g] [-h] [-i] [-l] [-n] [-o <OUTFILE>] [-p <PAGES>] [-r] [-s
        <PASSWORD>] [-t] [-u] [-v]
@@ -69,7 +85,7 @@ Tabula helps you extract tables from PDFs
  -v,--version               Print version and exit.
 ```
 
-It also includes a debugging tool, run `java -cp ./target/tabula-1.0.5-jar-with-dependencies.jar technology.tabula.debug.Debug -h` for the available options.
+It also includes a debugging tool, run `java -cp ./target/tabula-1.1.0-jar-with-dependencies.jar technology.tabula.debug.Debug -h` for the available options.
 
 You can also integrate `tabula-java` with any JVM language. For Java examples, see the [`tests`](src/test/java/technology/tabula/) folder.
 
@@ -81,13 +97,64 @@ JVM start-up time is a lot of the cost of the `tabula` command, so if you're try
  - writing your own program in any JVM language (Java, JRuby, Scala) that imports tabula-java.
  - waiting for us to implement an API/server-style system (it's on the [roadmap](https://github.com/tabulapdf/tabula-api))
 
+## NeoLegal fork
+
+`SpreadsheetExtractionAlgorithm` detects tables from the rulings a PDF draws. When those rulings are
+drawn imprecisely — a border split into two slightly offset segments, a horizontal line that stops
+just short of the vertical border it should meet, a leading cell with no border of its own — cells
+get multiplied or their text gets dropped. These options relax the detection for such documents:
+
+```java
+SpreadsheetExtractionAlgorithm sea = new SpreadsheetExtractionAlgorithm()
+        // rebuild the cells missing on the left of the detected ones, for tables whose
+        // leading cells have no border of their own
+        .withCellAutocompletion(true)
+        // widen each cell by 1% before collecting its text, to catch a trailing letter
+        // that the right border of the cell is drawn over
+        .withCellTextOverflowRatio(0.01f)
+        // merge two vertical borders less than 3 points apart: a PDF generator often draws
+        // one border as two slightly offset segments, which would enclose a sliver of a column
+        .withMinColumnWidth(3f)
+        // the same, for horizontal borders
+        .withMinRowHeight(3f)
+        // tolerate a 4 point gap between two aligned rulings, and between a ruling and the
+        // perpendicular border it should meet
+        .withMaxGapBetweenAlignedHorizontalRulings(4)
+        .withMaxGapBetweenAlignedVerticalRulings(4);
+```
+
+`SpreadsheetExtractionAlgorithm.neolegalDefaults()` returns the configuration NeoLegal runs in
+production, equivalent to `withCellAutocompletion(true).withCellTextOverflowRatio(0.01f)`.
+
+### Upgrading from 1.0.x
+
+1.1.0 rebases the fork onto current upstream, and two things change for callers:
+
+- **The fork's behaviours are now opt-in.** Up to 1.0.12 cell autocompletion and the 1% text
+  overflow were always on. `new SpreadsheetExtractionAlgorithm()` now reproduces upstream exactly;
+  use `SpreadsheetExtractionAlgorithm.neolegalDefaults()` to get the 1.0.x behaviour back.
+- **PDFBox 2.0.31 → 3.0.4.** If your own code touches `PDDocument` around tabula, `PDDocument.load(f)`
+  becomes `Loader.loadPDF(f)`. See PDFBox's [migration guide](https://pdfbox.apache.org/3.0/migration.html).
+
+### Other differences from upstream
+
+The fork also differs in a few ways that are not options:
+
+- it compiles and runs on **Java 17** (upstream targets Java 8);
+- `slf4j-simple` is a test dependency, so the library imposes no logger implementation on the
+  applications that use it — bring your own binding;
+- `Ruling.collapseOrientedRulings` no longer edits the rulings it is handed: `Page` hands out the
+  very rulings it caches, so two successive extractions of the same page used not to start from the
+  same state.
+
 ## API Usage Examples
 
 A simple Java code example which extracts all rows and cells from all tables of all pages of a PDF document:
 
 ```java
 InputStream in = this.getClass().getResourceAsStream("my.pdf");
-try (PDDocument document = PDDocument.load(in)) {
+// PDFBox 3 loads documents through Loader, not PDDocument.load
+try (PDDocument document = Loader.loadPDF(in.readAllBytes())) {
     SpreadsheetExtractionAlgorithm sea = new SpreadsheetExtractionAlgorithm();
     PageIterator pi = new ObjectExtractor(document).extract();
     while (pi.hasNext()) {
@@ -136,7 +203,7 @@ Interested in helping out? We'd love to have your help!
 
 You can help by:
 
-- [Reporting a bug](https://github.com/tabulapdf/tabula-java/issues).
+- [Reporting a bug](https://github.com/neolegal-fr/tabula-java/issues) — or [upstream](https://github.com/tabulapdf/tabula-java/issues) if it is not specific to this fork.
 - Adding or editing documentation.
 - Contributing code via a Pull Request.
 - Spreading the word about `tabula-java` to people who might be able to benefit from using it.

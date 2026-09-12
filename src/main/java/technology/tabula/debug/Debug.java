@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.cli.*;
+import org.apache.pdfbox.Loader;
 import technology.tabula.Cell;
 import technology.tabula.CommandLineApp;
 import technology.tabula.Line;
@@ -41,8 +42,8 @@ public class Debug {
 
     private static final float CIRCLE_RADIUS = 5f;
 
-    private static final Color[] COLORS = { new Color(27, 158, 119), new Color(217, 95, 2), new Color(117, 112, 179),
-            new Color(231, 41, 138), new Color(102, 166, 30) };
+    private static final Color[] COLORS = {new Color(27, 158, 119), new Color(217, 95, 2), new Color(117, 112, 179),
+            new Color(231, 41, 138), new Color(102, 166, 30)};
 
     public static void debugIntersections(Graphics2D g, Page page) {
         int i = 0;
@@ -206,76 +207,74 @@ public class Debug {
     }
 
     private static void drawShape(Graphics2D g, Shape shape) {
-        // g.setStroke(new BasicStroke(1));
+        //g.setStroke(new BasicStroke(1));
         g.draw(shape);
     }
 
     public static void renderPage(String pdfPath, String outPath, int pageNumber, Rectangle area,
-            boolean drawTextChunks, boolean drawSpreadsheets, boolean drawRulings, boolean drawIntersections,
-            boolean drawColumns, boolean drawCharacters, boolean drawArea, boolean drawCells,
-            boolean drawUnprocessedRulings, boolean drawProjectionProfile, boolean drawClippingPaths,
-            boolean drawDetectedTables) throws IOException {
-        PDDocument document = PDDocument.load(new File(pdfPath));
+                                  boolean drawTextChunks, boolean drawSpreadsheets, boolean drawRulings, boolean drawIntersections,
+                                  boolean drawColumns, boolean drawCharacters, boolean drawArea, boolean drawCells,
+                                  boolean drawUnprocessedRulings, boolean drawProjectionProfile, boolean drawClippingPaths,
+                                  boolean drawDetectedTables) throws IOException {
+        PDDocument document = Loader.loadPDF(new File(pdfPath));
 
-        try (ObjectExtractor oe = new ObjectExtractor(document);) {
+        ObjectExtractor oe = new ObjectExtractor(document);
 
-            Page page = oe.extract(pageNumber + 1);
+        Page page = oe.extract(pageNumber + 1);
 
-            if (area != null) {
-                page = page.getArea(area);
-            }
-
-            PDPage p = document.getPage(pageNumber);
-
-            BufferedImage image = Utils.pageConvertToImage(document, p, 72, ImageType.RGB);
-
-            Graphics2D g = (Graphics2D) image.getGraphics();
-
-            if (drawTextChunks) {
-                debugTextChunks(g, page);
-            }
-            if (drawSpreadsheets) {
-                debugSpreadsheets(g, page);
-            }
-            if (drawRulings) {
-                debugRulings(g, page);
-            }
-            if (drawIntersections) {
-                debugIntersections(g, page);
-            }
-            if (drawColumns) {
-                debugColumns(g, page);
-            }
-            if (drawCharacters) {
-                debugCharacters(g, page);
-            }
-            if (drawArea) {
-                g.setColor(Color.ORANGE);
-                drawShape(g, area);
-            }
-            if (drawCells) {
-                debugCells(g, area, page);
-            }
-            if (drawUnprocessedRulings) {
-                debugNonCleanRulings(g, page);
-            }
-            if (drawProjectionProfile) {
-                debugProjectionProfile(g, page);
-            }
-            if (drawClippingPaths) {
-                // TODO: Enable when oe.clippingPaths is done
-                // drawShapes(g, oe.clippingPaths,
-                // new BasicStroke(2f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10f, new
-                // float[] { 3f }, 0f));
-            }
-            if (drawDetectedTables) {
-                debugDetectedTables(g, page);
-            }
-
-            document.close();
-
-            ImageIO.write(image, "jpg", new File(outPath));
+        if (area != null) {
+            page = page.getArea(area);
         }
+
+        PDPage p = document.getPage(pageNumber);
+
+        BufferedImage image = Utils.pageConvertToImage(document, p, 72, ImageType.RGB);
+
+        Graphics2D g = (Graphics2D) image.getGraphics();
+
+        if (drawTextChunks) {
+            debugTextChunks(g, page);
+        }
+        if (drawSpreadsheets) {
+            debugSpreadsheets(g, page);
+        }
+        if (drawRulings) {
+            debugRulings(g, page);
+        }
+        if (drawIntersections) {
+            debugIntersections(g, page);
+        }
+        if (drawColumns) {
+            debugColumns(g, page);
+        }
+        if (drawCharacters) {
+            debugCharacters(g, page);
+        }
+        if (drawArea) {
+            g.setColor(Color.ORANGE);
+            drawShape(g, area);
+        }
+        if (drawCells) {
+            debugCells(g, area, page);
+        }
+        if (drawUnprocessedRulings) {
+            debugNonCleanRulings(g, page);
+        }
+        if (drawProjectionProfile) {
+            debugProjectionProfile(g, page);
+        }
+        if (drawClippingPaths) {
+            // TODO: Enable when oe.clippingPaths is done
+            //drawShapes(g, oe.clippingPaths,
+            //		new BasicStroke(2f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10f, new float[] { 3f }, 0f));
+        }
+        if (drawDetectedTables) {
+            debugDetectedTables(g, page);
+        }
+
+        document.close();
+
+        ImageIO.write(image, "jpg", new File(outPath));
     }
 
     private static Options buildOptions() {
@@ -351,7 +350,7 @@ public class Debug {
 
             if (pages == null) {
                 // user specified all pages
-                PDDocument document = PDDocument.load(pdfFile);
+                PDDocument document =  Loader.loadPDF(pdfFile);
 
                 int numPages = document.getNumberOfPages();
                 pages = new ArrayList<>(numPages);

@@ -1,5 +1,7 @@
 package technology.tabula;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
@@ -11,9 +13,10 @@ import org.apache.commons.cli.ParseException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 public class TestCommandLineApp {
+
+    @TempDir
+    public Path folder;
 
     private String csvFromCommandLineArgs(String[] args) throws ParseException {
         CommandLineParser parser = new DefaultParser();
@@ -63,10 +66,11 @@ public class TestCommandLineApp {
     }
 
     @Test
-    public void testExtractSpreadsheetWithAreaAndNewFile(@TempDir File newFile) throws ParseException, IOException {
+    public void testExtractSpreadsheetWithAreaAndNewFile() throws ParseException, IOException {
 
         String expectedCsv = UtilsForTesting.loadCsv("src/test/resources/technology/tabula/csv/spreadsheet_no_bounding_frame.csv");
 
+        File newFile = Files.createTempFile(folder, null, null).toFile();
         this.csvFromCommandLineArgs(new String[]{
                 "src/test/resources/technology/tabula/spreadsheet_no_bounding_frame.pdf",
                 "-p", "1", "-a",
@@ -134,13 +138,13 @@ public class TestCommandLineApp {
     }
 
     @Test
-    public void testEncryptedWrongPassword() {
-        assertThrows(ParseException.class, () -> this.csvFromCommandLineArgs(new String[]{
-                        "src/test/resources/technology/tabula/encrypted.pdf",
-                        "-s", "wrongpassword",
-                        "-p", "1",
-                        "-f", "CSV"
-                }));
+    public void testEncryptedWrongPassword() throws ParseException {
+        assertThrows(org.apache.commons.cli.ParseException.class, () -> this.csvFromCommandLineArgs(new String[]{
+                "src/test/resources/technology/tabula/encrypted.pdf",
+                "-s", "wrongpassword",
+                "-p", "1",
+                "-f", "CSV"
+        }));
     }
 
     @Test

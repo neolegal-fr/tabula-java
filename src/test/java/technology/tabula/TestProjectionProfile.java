@@ -1,15 +1,16 @@
 package technology.tabula;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestProjectionProfile {
 	
@@ -20,9 +21,10 @@ public class TestProjectionProfile {
 	public void setUpProjectionProfile() {
 		PDPage pdPage = new PDPage();
 		PDDocument pdDocument = new PDDocument();
-		
-		TextElement textElement = new TextElement(5f, 15f, 10f, 20f, PDType1Font.HELVETICA, 1f, "test", 1f);
-		TextElement textElement2 = new TextElement(5f, 15f, 10f, 20f, PDType1Font.HELVETICA, 1f, "test", 1f);
+
+		PDType1Font font = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+		TextElement textElement = new TextElement(5f, 15f, 10f, 20f, font, 1f, "test", 1f);
+		TextElement textElement2 = new TextElement(5f, 15f, 10f, 20f, font, 1f, "test", 1f);
 		List<TextElement> textList = new ArrayList<>();
 		textList.add(textElement);
 		textList.add(textElement2);
@@ -50,25 +52,25 @@ public class TestProjectionProfile {
 	@Test
 	public void testGetVerticalProjection() {
 		float[] projection = pProfile.getVerticalProjection();
-        assertEquals(10, projection.length);
+		assertTrue(projection.length == 10);
 		}
 
 	@Test
 	public void testGetHorizontalProjection() {
 		float[] projection = pProfile.getHorizontalProjection();
-        assertEquals(10, projection.length);
+		assertTrue(projection.length == 10);
 	}
 
 	@Test
 	public void testFindVerticalSeparators() {
 		float[] seperators = pProfile.findVerticalSeparators(page.getText().size() * 2.5f);
-        assertEquals(0, seperators.length);
+		assertTrue(seperators.length == 0);
 	}
 
 	@Test
 	public void testFindHorizontalSeparators() {
 		float[] seperators = pProfile.findHorizontalSeparators(page.getText().size() * 2.5f);
-        assertEquals(0, seperators.length);
+		assertTrue(seperators.length == 0);
 	}
 
 	@Test
@@ -93,7 +95,7 @@ public class TestProjectionProfile {
 		float[] rv = ProjectionProfile.getAutocorrelation(projection);
 
 		assertEquals(0f, rv[0], 1e-5);
-        assertEquals(2, rv.length);
+		assertTrue(rv.length == 2);
 
 	}
 

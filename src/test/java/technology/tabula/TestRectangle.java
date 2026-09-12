@@ -1,7 +1,6 @@
 package technology.tabula;
 
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
@@ -9,7 +8,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 public class TestRectangle {
 
@@ -19,8 +20,8 @@ public class TestRectangle {
 		Rectangle first = new Rectangle();
 		Rectangle second = new Rectangle();
 
-        assertEquals(first, second);
-        assertEquals(second, first);
+		assertTrue(first.equals(second));
+		assertTrue(second.equals(first));
 	}
 
 	@Test
@@ -110,7 +111,7 @@ public class TestRectangle {
 		float overlap = lower.verticalOverlap(upper);
 
 		assertEquals(0f, overlap, 0);
-        assertFalse(lower.verticallyOverlaps(upper));
+		assertTrue(!lower.verticallyOverlaps(upper));
 		assertEquals(0f, lower.verticalOverlapRatio(upper), 0);
 		assertEquals(0f, lower.overlapRatio(upper), 0);
 
@@ -137,7 +138,7 @@ public class TestRectangle {
 		Rectangle one = new Rectangle(0f, 0f, 10f, 10f);
 		Rectangle two = new Rectangle(10f, 10f, 10f, 10f);
 
-        assertFalse(one.horizontallyOverlaps(two));
+		assertTrue(!one.horizontallyOverlaps(two));
 		assertEquals(0f, one.overlapRatio(two), 0);
 
 	}
@@ -215,7 +216,7 @@ public class TestRectangle {
 
 		};
 
-		assertArrayEquals(expectedPoints, points);
+		Assertions.assertArrayEquals(expectedPoints, points);
 
 	}
 
