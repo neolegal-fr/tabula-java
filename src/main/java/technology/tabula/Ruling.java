@@ -481,7 +481,9 @@ public class Ruling extends Line2D.Float {
                 continue;
             }
             else {
-                rv.add(next_line);
+                // work on a copy: absorbing a ruling below would otherwise edit, in place, a ruling
+                // the caller still holds - Page hands out the very rulings it caches
+                rv.add(new Ruling(next_line.getP1(), next_line.getP2()));
             }
         }
         return magnetRadius > 0 ? magnetize(rv, expandAmount, perpendicularExpandAmount, magnetRadius) : rv;
