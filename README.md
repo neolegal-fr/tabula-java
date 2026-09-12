@@ -81,6 +81,35 @@ JVM start-up time is a lot of the cost of the `tabula` command, so if you're try
  - writing your own program in any JVM language (Java, JRuby, Scala) that imports tabula-java.
  - waiting for us to implement an API/server-style system (it's on the [roadmap](https://github.com/tabulapdf/tabula-api))
 
+## NeoLegal fork
+
+This is [NeoLegal](https://neolegal.fr)'s fork of `tabula-java`, published to Maven Central as
+`fr.neolegal:tabula`. It tracks upstream and adds options to `SpreadsheetExtractionAlgorithm`
+for PDFs whose table borders are drawn imprecisely. **Every option is off by default**: an
+unconfigured `SpreadsheetExtractionAlgorithm` behaves exactly like the upstream one.
+
+```java
+SpreadsheetExtractionAlgorithm sea = new SpreadsheetExtractionAlgorithm()
+        // rebuild the cells missing on the left of the detected ones, for tables whose
+        // leading cells have no border of their own
+        .withCellAutocompletion(true)
+        // widen each cell by 1% before collecting its text, to catch a trailing letter
+        // that the right border of the cell is drawn over
+        .withCellTextOverflowRatio(0.01f)
+        // merge two vertical borders less than 3 points apart: a PDF generator often draws
+        // one border as two slightly offset segments, which would enclose a sliver of a column
+        .withMinColumnWidth(3f)
+        // the same, for horizontal borders
+        .withMinRowHeight(3f)
+        // tolerate a 4 point gap between two aligned rulings, and between a ruling and the
+        // perpendicular border it should meet
+        .withMaxGapBetweenAlignedHorizontalRulings(4)
+        .withMaxGapBetweenAlignedVerticalRulings(4);
+```
+
+`SpreadsheetExtractionAlgorithm.neolegalDefaults()` returns the configuration NeoLegal runs in
+production, equivalent to `withCellAutocompletion(true).withCellTextOverflowRatio(0.01f)`.
+
 ## API Usage Examples
 
 A simple Java code example which extracts all rows and cells from all tables of all pages of a PDF document:
