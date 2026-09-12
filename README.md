@@ -15,12 +15,12 @@ This fork is published to Maven Central as `fr.neolegal:tabula`:
 <dependency>
     <groupId>fr.neolegal</groupId>
     <artifactId>tabula</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
 </dependency>
 ```
 
 ```groovy
-implementation 'fr.neolegal:tabula:1.1.0'
+implementation 'fr.neolegal:tabula:1.1.1'
 ```
 
 A jar with all dependencies included, that works on Mac, Windows and Linux, is on the [releases page](../../releases).
@@ -30,7 +30,7 @@ A jar with all dependencies included, that works on Mac, Windows and Linux, is o
 `tabula-java` provides a command line application:
 
 ```
-$ java -jar target/tabula-1.1.0-jar-with-dependencies.jar --help
+$ java -jar target/tabula-1.1.1-jar-with-dependencies.jar --help
 usage: tabula [-a <AREA>] [-b <DIRECTORY>] [-c <COLUMNS>] [-f <FORMAT>]
        [-g] [-h] [-i] [-l] [-n] [-o <OUTFILE>] [-p <PAGES>] [-r] [-s
        <PASSWORD>] [-t] [-u] [-v]
@@ -85,7 +85,7 @@ Tabula helps you extract tables from PDFs
  -v,--version               Print version and exit.
 ```
 
-It also includes a debugging tool, run `java -cp ./target/tabula-1.1.0-jar-with-dependencies.jar technology.tabula.debug.Debug -h` for the available options.
+It also includes a debugging tool, run `java -cp ./target/tabula-1.1.1-jar-with-dependencies.jar technology.tabula.debug.Debug -h` for the available options.
 
 You can also integrate `tabula-java` with any JVM language. For Java examples, see the [`tests`](src/test/java/technology/tabula/) folder.
 
@@ -128,7 +128,7 @@ production, equivalent to `withCellAutocompletion(true).withCellTextOverflowRati
 
 ### Upgrading from 1.0.x
 
-1.1.0 rebases the fork onto current upstream, and two things change for callers:
+1.1.x rebases the fork onto current upstream, and two things change for callers:
 
 - **The fork's behaviours are now opt-in.** Up to 1.0.12 cell autocompletion and the 1% text
   overflow were always on. `new SpreadsheetExtractionAlgorithm()` now reproduces upstream exactly;
