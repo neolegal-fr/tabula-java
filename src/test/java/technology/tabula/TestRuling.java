@@ -95,6 +95,12 @@ public class TestRuling {
 		assertTrue(ruling.parallelTo(new Ruling(5, 5, 10, 10)));
 		assertFalse(ruling.parallelTo(new Ruling(0, 10, 10, -10)));
 		assertFalse(ruling.parallelTo(null));
+		
+		// the same ruling drawn in the opposite direction is still parallel
+		Ruling downwards = new Ruling(new java.awt.geom.Point2D.Float(50f, 0f), new java.awt.geom.Point2D.Float(50f, 20f));
+		Ruling upwards = new Ruling(new java.awt.geom.Point2D.Float(60f, 20f), new java.awt.geom.Point2D.Float(60f, 0f));
+		assertTrue(downwards.parallelTo(upwards));
+		assertTrue(upwards.parallelTo(downwards));
 	}
 	
 	@Test

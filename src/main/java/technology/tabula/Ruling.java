@@ -285,7 +285,12 @@ public class Ruling extends Line2D.Float {
     }
     
     public boolean parallelTo(Ruling other) {
-        return other != null && Utils.feq(this.getAngle(), other.getAngle());
+        if (other == null) {
+            return false;
+        }
+        // a ruling drawn bottom-up has the angle of the same ruling drawn top-down, plus 180
+        double difference = Math.abs(this.getAngle() - other.getAngle()) % 180;
+        return Utils.feq(difference, 0) || Utils.feq(difference, 180);
     }
 
     public double getAngle() {

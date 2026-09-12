@@ -28,9 +28,6 @@ public class SpreadsheetExtractionAlgorithm implements ExtractionAlgorithm {
     private boolean cellAutocompletion = false;
     private float cellTextOverflowRatio = 0f;
 
-    public SpreadsheetExtractionAlgorithm() {
-    }
-
     /**
      * @see #maxGapBetweenAlignedHorizontalRulings
      */
